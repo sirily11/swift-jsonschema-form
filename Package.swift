@@ -7,6 +7,7 @@ let package = Package(
     name: "JSONSchemaForm",
     platforms: [
         .macOS(.v15),
+        .iOS(.v15),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -16,7 +17,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/kevinhermawan/swift-json-schema.git", .upToNextMajor(from: "2.0.0")),
+        .package(url: "https://github.com/sirily11/swift-json-schema", branch: "main"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

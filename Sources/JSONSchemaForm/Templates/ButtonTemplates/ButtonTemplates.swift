@@ -17,7 +17,7 @@ struct ButtonTemplates {
 /// Corresponds to the function exported by `components/templates/ButtonTemplates/index.ts`.
 ///
 /// - Returns: A `ButtonTemplates` struct containing default button views.
-func getDefaultButtonTemplates() -> ButtonTemplates {
+@MainActor func getDefaultButtonTemplates() -> ButtonTemplates {
     return ButtonTemplates(
         submitButton: AnyView(SubmitButton()),
         addButton: AnyView(AddButton()),
@@ -26,4 +26,4 @@ func getDefaultButtonTemplates() -> ButtonTemplates {
         moveUpButton: AnyView(MoveUpButton()),
         removeButton: AnyView(RemoveButton())
     )
-} 
+}
