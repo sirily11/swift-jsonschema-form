@@ -27,8 +27,12 @@ struct FormState {
 
 
 public enum FormData: Equatable {
-    case object(properties: [String: Any])
-    case array(items: [Any])
+    case object(properties: [String: FormData])
+    case array(items: [FormData])
+    case string(String)
+    case number(Double)
+    case boolean(Bool)
+    case null
 
 
     public static func == (lhs: FormData, rhs: FormData) -> Bool {
@@ -37,6 +41,13 @@ public enum FormData: Equatable {
             return NSDictionary(dictionary: lhsProperties).isEqual(to: rhsProperties)
         case (.array(let lhsItems), .array(let rhsItems)):
             return NSArray(array: lhsItems).isEqual(to: rhsItems)
+        case (.string(let lhsString), .string(let rhsString)):
+            return lhsString == rhsString
+        case (.number(let lhsNumber), .number(let rhsNumber)):
+            return lhsNumber == rhsNumber
+        case (.boolean(let lhsBoolean), .boolean(let rhsBoolean)):
+            return lhsBoolean == rhsBoolean
+            
         default:
             return false
         }
@@ -163,7 +174,7 @@ public struct JSONSchemaForm: View {
                     schema: schema,
                     uiSchema: uiSchema,
                     id: idPrefix,
-                    formData: state.formData,
+                    formData: formData,
                     required: false,
                     onChange: handleChange
                 )
