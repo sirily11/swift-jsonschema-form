@@ -1,7 +1,7 @@
 import JSONSchema
 import SwiftUI
 
-/// Implements an array field that can render as a list of items with add/remove capabilities
+/// Implements a field for array values
 struct ArrayField: Field {
     var schema: JSONSchema
     var uiSchema: [String: Any]?
@@ -9,171 +9,172 @@ struct ArrayField: Field {
     var formData: [Any]?
     var required: Bool
     var onChange: ([Any]?) -> Void
+    var propertyName: String?
     
-    // Options for the array field
-    private var options: ArrayFieldOptions {
-        // Default options
-        var opts = ArrayFieldOptions(
-            orderable: true,
-            addable: true,
-            removable: true
-        )
-        
-        // Override with UI schema options if provided
-        if let uiSchema = uiSchema,
-           let uiOptions = uiSchema["ui:options"] as? [String: Any]
-        {
-            if let orderable = uiOptions["orderable"] as? Bool {
-                opts.orderable = orderable
-            }
-            if let addable = uiOptions["addable"] as? Bool {
-                opts.addable = addable
-            }
-            if let removable = uiOptions["removable"] as? Bool {
-                opts.removable = removable
-            }
+    // Keep a stable field identifier for array items
+    @State private var itemIds: [UUID] = []
+    
+    private var arraySchema: JSONSchema.ArraySchema? {
+        guard case .array = schema.type else {
+            return nil
         }
-        
-        return opts
-    }
-    
-    // Extract item schema from the array schema
-    private var itemSchema: JSONSchema? {
-        // TODO: Implement schema extraction logic
-        return nil
-    }
-    
-    // Safe access to formData with an empty array fallback
-    private var items: [Any] {
-        return formData ?? []
+        return schema.arraySchema
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Render the field title if present
-            if !fieldTitle.isEmpty {
-                Text(fieldTitle)
-                    .font(.headline)
-            }
-            
-            // Render the array items
-            ForEach(0 ..< items.count, id: \.self) { index in
-                arrayItemView(for: index)
-            }
-            
-            // Add button if the array is addable
-            if options.addable {
-                addButton()
-            }
-        }
-    }
-    
-    // View for a single array item
-    private func arrayItemView(for index: Int) -> some View {
-        VStack(alignment: .leading) {
-            HStack(alignment: .top) {
-                // Item content (placeholder - would need specific field rendering)
-                Text("Item \(index + 1)")
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(5)
-                
-                Spacer()
-                
-                // Item toolbar with move up/down/remove buttons
-                if options.orderable || options.removable {
-                    HStack(spacing: 8) {
-                        // Move up button
-                        if options.orderable && index > 0 {
-                            Button(action: {
-                                moveItemUp(at: index)
-                            }) {
-                                Image(systemName: "arrow.up")
-                                    .foregroundColor(.blue)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        
-                        // Move down button
-                        if options.orderable && index < items.count - 1 {
-                            Button(action: {
-                                moveItemDown(at: index)
-                            }) {
-                                Image(systemName: "arrow.down")
-                                    .foregroundColor(.blue)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        
-                        // Remove button
-                        if options.removable {
+        Section(fieldTitle) {
+            // Display existing items
+            if let formData = formData, !formData.isEmpty {
+                ForEach(0..<formData.count, id: \.self) { index in
+                    let itemId = getItemId(at: index)
+                    let itemIdString = "\(id)_\(index)"
+                    
+                    // Get the item schema
+                    let itemSchema = arraySchema?.items ?? .string()
+                    
+                    // Render the item with its own schema field
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("Item \(index + 1)")
+                                .font(.headline)
+                            
+                            Spacer()
+                            
+                            // Remove button
                             Button(action: {
                                 removeItem(at: index)
                             }) {
                                 Image(systemName: "trash")
                                     .foregroundColor(.red)
                             }
-                            .buttonStyle(.plain)
                         }
+                        
+                        // Render the appropriate field for this item
+                        SchemaField(
+                            schema: itemSchema,
+                            uiSchema: getItemUiSchema(),
+                            id: itemIdString,
+                            formData: formData[index],
+                            required: true,
+                            onChange: { newValue in
+                                updateItem(at: index, value: newValue)
+                            },
+                            propertyName: propertyName
+                        )
                     }
+                    .id(itemId) // Use a stable ID for each item
+                }
+            } else {
+                Text("No items")
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+            
+            // Add button
+            Button("Add Item") {
+                addItem()
+            }
+        }
+        .onAppear {
+            // Initialize item IDs if needed
+            initializeItemIds()
+        }
+    }
+    
+    // Get a stable ID for an item at the given index
+    private func getItemId(at index: Int) -> UUID {
+        // Ensure we have enough IDs
+        while itemIds.count <= index {
+            itemIds.append(UUID())
+        }
+        return itemIds[index]
+    }
+    
+    // Initialize item IDs based on current formData
+    private func initializeItemIds() {
+        if let data = formData {
+            // Create IDs for existing items if needed
+            if itemIds.count < data.count {
+                for _ in itemIds.count..<data.count {
+                    itemIds.append(UUID())
                 }
             }
-            .padding(.vertical, 4)
         }
     }
     
-    // Add button view
-    private func addButton() -> some View {
-        Button(action: {
-            addItem()
-        }) {
-            HStack {
-                Image(systemName: "plus")
-                Text("Add Item")
-            }
-        }
-        .padding(.vertical, 8)
+    // Get the UI schema for array items
+    private func getItemUiSchema() -> [String: Any]? {
+        return uiSchema?["items"] as? [String: Any]
     }
     
-    // MARK: - Array manipulation methods
-    
+    // Add a new item
     private func addItem() {
-        var newArray = items
+        // Create default value based on item schema
+        var defaultValue: Any?
         
-        // Add empty item (in a real implementation, this would create a default based on the schema)
-        // This is simplified - would need type-specific handling
-        newArray.append("New Item")
+        if let itemSchema = arraySchema?.items {
+            defaultValue = createDefaultValue(for: itemSchema)
+        }
         
-        onChange(newArray)
+        // Add a new UUID for this item
+        itemIds.append(UUID())
+        
+        // Update the form data with the new item
+        var updatedFormData = formData ?? []
+        updatedFormData.append(defaultValue ?? NSNull())
+        onChange(updatedFormData)
     }
     
+    // Remove an item at the specified index
     private func removeItem(at index: Int) {
-        var newArray = items
+        var updatedFormData = formData ?? []
         
-        if index >= 0 && index < newArray.count {
-            newArray.remove(at: index)
-            onChange(newArray.isEmpty ? nil : newArray)
+        if index < updatedFormData.count {
+            updatedFormData.remove(at: index)
+            
+            // Also remove the ID
+            if index < itemIds.count {
+                itemIds.remove(at: index)
+            }
+            
+            onChange(updatedFormData)
         }
     }
     
-    private func moveItemUp(at index: Int) {
-        guard index > 0 && index < items.count else {
-            return
+    // Update an item at the specified index
+    private func updateItem(at index: Int, value: Any?) {
+        var updatedFormData = formData ?? []
+        
+        // Ensure the array is large enough
+        while updatedFormData.count <= index {
+            updatedFormData.append(NSNull())
         }
         
-        var newArray = items
-        newArray.swapAt(index, index - 1)
-        onChange(newArray)
+        if let value = value {
+            updatedFormData[index] = value
+        } else {
+            updatedFormData[index] = NSNull()
+        }
+        
+        onChange(updatedFormData)
     }
     
-    private func moveItemDown(at index: Int) {
-        guard index >= 0 && index < items.count - 1 else {
-            return
+    // Create a default value for a schema
+    private func createDefaultValue(for schema: JSONSchema) -> Any? {
+        switch schema.type {
+        case .string:
+            return ""
+        case .number, .integer:
+            return 0
+        case .boolean:
+            return false
+        case .array:
+            return []
+        case .object:
+            return [String: Any]()
+        default:
+            return nil
         }
-        
-        var newArray = items
-        newArray.swapAt(index, index + 1)
-        onChange(newArray)
     }
 }
 

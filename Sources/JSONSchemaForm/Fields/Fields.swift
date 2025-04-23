@@ -1,5 +1,5 @@
-import SwiftUI
 import JSONSchema
+import SwiftUI
 
 enum FieldType: String {
     case AnyOfField
@@ -14,12 +14,13 @@ enum FieldType: String {
 }
 
 protocol Field: View, Sendable {
+    var propertyName: String? { get }
     var schema: JSONSchema { get }
     var fieldTitle: String { get }
 }
 
 extension Field {
     var fieldTitle: String {
-        return schema.title ?? ""
+        return schema.title ?? propertyName ?? ""
     }
 }

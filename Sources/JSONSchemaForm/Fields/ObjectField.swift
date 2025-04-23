@@ -1,5 +1,6 @@
-import SwiftUI
 import JSONSchema
+import SwiftUI
+import Collections
 
 /// Implements an object field that renders a group of property fields
 struct ObjectField: Field {
@@ -9,14 +10,20 @@ struct ObjectField: Field {
     var formData: [String: Any]?
     var required: Bool
     var onChange: ([String: Any]?) -> Void
+    var propertyName: String?
+    
+    // Cache the property order to maintain consistency
+    @State private var cachedPropertyOrder: [String] = []
     
     // Extract properties from schema
-    private var properties: [String: JSONSchema]? {
+    private var properties: OrderedDictionary<String, JSONSchema>? {
         guard case .object = schema.type else {
             return nil
         }
-        
-        return schema.objectSchema?.properties
+
+        let dict = schema.objectSchema?.properties ?? [:]
+        let orderedProperties =  OrderedDictionary(uniqueKeys: dict.keys, values: dict.values)
+        return orderedProperties
     }
     
     // Get required properties from schema
@@ -30,6 +37,11 @@ struct ObjectField: Field {
     
     // Determine property order from uiSchema or use the default order
     private var propertyOrder: [String] {
+        // If we already have a cached order, use that
+        if !cachedPropertyOrder.isEmpty {
+            return cachedPropertyOrder
+        }
+        
         var order: [String] = []
         
         // Check if order is defined in uiSchema
@@ -51,29 +63,29 @@ struct ObjectField: Field {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Show title if not empty
-            if !fieldTitle.isEmpty {
-                Text(fieldTitle)
-                    .font(.title3)
-                    .bold()
-            }
-            
+        Section(fieldTitle) {
             // Render properties according to the order
             if let properties = properties {
-                ForEach(propertyOrder, id: \.self) { propertyName in
+                // Use onAppear to initialize cached property order
+                let currentOrder = propertyOrder
+                
+                ForEach(currentOrder, id: \.self) { propertyName in
                     if let propertySchema = properties[propertyName] {
                         propertyView(name: propertyName, schema: propertySchema)
                     }
                 }
             }
         }
-        .padding()
-        .background(Color.secondary.opacity(0.05))
-        .cornerRadius(8)
+        .onAppear {
+            // Cache the property order when the view appears
+            if cachedPropertyOrder.isEmpty {
+                cachedPropertyOrder = propertyOrder
+            }
+        }
     }
     
     // Render a property field
+    @ViewBuilder
     private func propertyView(name: String, schema: JSONSchema) -> some View {
         // Get property-specific uiSchema if it exists
         let propertyUiSchema = uiSchema?[name] as? [String: Any]
@@ -84,29 +96,30 @@ struct ObjectField: Field {
         // Get property value from formData
         let propertyValue = formData?[name]
         
-        // Placeholder for actual field rendering
-        // In a complete implementation, this would use SchemaField to render
-        // the appropriate field type based on the schema
-        return VStack(alignment: .leading) {
-            Text(name)
-                .font(.headline)
-            
-            Text("Property type: \(getSchemaType(schema))")
-                .foregroundColor(.secondary)
-                .font(.caption)
-            
-            if isRequired {
-                Text("Required")
-                    .foregroundColor(.red)
-                    .font(.caption)
+        // Create a unique ID for this field
+        let fieldId = "\(id)_\(name)"
+        
+        // Property change handler
+        let handlePropertyChange: (Any?) -> Void = { newValue in
+            var updatedFormData = formData ?? [:]
+            if let newValue = newValue {
+                updatedFormData[name] = newValue
+            } else {
+                updatedFormData.removeValue(forKey: name)
             }
-            
-            if let value = propertyValue {
-                Text("Current value: \(String(describing: value))")
-                    .font(.caption)
-            }
+            onChange(updatedFormData)
         }
-        .padding(.vertical, 4)
+        
+        // Render the appropriate field based on schema type
+        SchemaField(
+            schema: schema,
+            uiSchema: propertyUiSchema,
+            id: fieldId,
+            formData: propertyValue,
+            required: isRequired,
+            onChange: handlePropertyChange,
+            propertyName: name
+        )
     }
     
     // Helper method to get schema type name
@@ -135,4 +148,4 @@ struct ObjectField: Field {
     // - Updating individual property values
     // - Adding additional properties if allowed
     // - Removing properties
-} 
+}

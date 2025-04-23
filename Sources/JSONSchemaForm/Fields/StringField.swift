@@ -1,5 +1,5 @@
-import SwiftUI
 import JSONSchema
+import SwiftUI
 
 /// Implements a string field that can render as text input, textarea, select, etc. based on uiSchema
 struct StringField: Field {
@@ -9,18 +9,21 @@ struct StringField: Field {
     var formData: String?
     var required: Bool
     var onChange: (String?) -> Void
+    var propertyName: String?
     
     private var widget: String? {
         if let uiSchema = uiSchema,
-           let widgetType = uiSchema["ui:widget"] as? String {
+           let widgetType = uiSchema["ui:widget"] as? String
+        {
             return widgetType
         }
         return nil
     }
+
     // Extract format from schema if available
     private var format: String? {
         // TODO: Implement
-      return nil
+        return nil
     }
     
     var body: some View {
@@ -122,20 +125,15 @@ private struct TextWidget: View {
     var onChange: (String?) -> Void
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            TextField("", text: Binding(
-                get: { self.value },
-                set: { onChange($0.isEmpty ? nil : $0) }
-            ))
-            .textFieldStyle(RoundedBorderTextFieldStyle())
-            .id(id)
+        var title = label
+        if required {
+            title += " *"
         }
+        return TextField(title, text: Binding(
+            get: { self.value },
+            set: { onChange($0.isEmpty ? nil : $0) }
+        ))
+        .id(id)
     }
 }
 
@@ -151,16 +149,12 @@ private struct TextAreaWidget: View {
         VStack(alignment: .leading) {
             if !label.isEmpty {
                 Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
             }
-            
             TextEditor(text: Binding(
                 get: { self.value },
                 set: { onChange($0.isEmpty ? nil : $0) }
             ))
             .frame(minHeight: 100)
-            .border(Color.gray.opacity(0.2))
             .id(id)
         }
     }
@@ -178,20 +172,14 @@ private struct PasswordWidget: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
             HStack {
                 if isSecured {
-                    SecureField("", text: Binding(
+                    SecureField(label, text: Binding(
                         get: { self.value },
                         set: { onChange($0.isEmpty ? nil : $0) }
                     ))
                 } else {
-                    TextField("", text: Binding(
+                    TextField(label, text: Binding(
                         get: { self.value },
                         set: { onChange($0.isEmpty ? nil : $0) }
                     ))
@@ -224,27 +212,19 @@ private struct ColorWidget: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            ColorPicker(
-                "",
-                selection: Binding(
-                    get: { self.color },
-                    set: { newColor in
-                        // Convert Color to hex string
-                        if let hex = newColor.toHex() {
-                            onChange(hex)
-                        }
+        ColorPicker(
+            label,
+            selection: Binding(
+                get: { self.color },
+                set: { newColor in
+                    // Convert Color to hex string
+                    if let hex = newColor.toHex() {
+                        onChange(hex)
                     }
-                )
+                }
             )
-            .id(id)
-        }
+        )
+        .id(id)
     }
 }
 
@@ -257,20 +237,11 @@ private struct EmailWidget: View {
     var onChange: (String?) -> Void
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            TextField("user@example.com", text: Binding(
-                get: { self.value },
-                set: { onChange($0.isEmpty ? nil : $0) }
-            ))
-            .textFieldStyle(RoundedBorderTextFieldStyle())
-            .id(id)
-        }
+        TextField(label, text: Binding(
+            get: { self.value },
+            set: { onChange($0.isEmpty ? nil : $0) }
+        ))
+        .id(id)
     }
 }
 
@@ -283,20 +254,12 @@ private struct URLWidget: View {
     var onChange: (String?) -> Void
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            TextField("https://example.com", text: Binding(
-                get: { self.value },
-                set: { onChange($0.isEmpty ? nil : $0) }
-            ))
-            .textFieldStyle(RoundedBorderTextFieldStyle())
-            .id(id)
-        }
+        TextField(label, text: Binding(
+            get: { self.value },
+            set: { onChange($0.isEmpty ? nil : $0) }
+        ))
+        .textFieldStyle(RoundedBorderTextFieldStyle())
+        .id(id)
     }
 }
 
@@ -329,27 +292,19 @@ private struct DateTimeWidget: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            DatePicker(
-                "",
-                selection: Binding(
-                    get: { self.date },
-                    set: { newDate in
-                        let formatter = ISO8601DateFormatter()
-                        formatter.formatOptions = [.withInternetDateTime]
-                        onChange(formatter.string(from: newDate))
-                    }
-                ),
-                displayedComponents: [.date, .hourAndMinute]
-            )
-            .id(id)
-        }
+        DatePicker(
+            label,
+            selection: Binding(
+                get: { self.date },
+                set: { newDate in
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withInternetDateTime]
+                    onChange(formatter.string(from: newDate))
+                }
+            ),
+            displayedComponents: [.date, .hourAndMinute]
+        )
+        .id(id)
     }
 }
 
@@ -382,27 +337,19 @@ private struct DateWidget: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            DatePicker(
-                "",
-                selection: Binding(
-                    get: { self.date },
-                    set: { newDate in
-                        let formatter = DateFormatter()
-                        formatter.dateFormat = "yyyy-MM-dd"
-                        onChange(formatter.string(from: newDate))
-                    }
-                ),
-                displayedComponents: .date
-            )
-            .id(id)
-        }
+        DatePicker(
+            label,
+            selection: Binding(
+                get: { self.date },
+                set: { newDate in
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    onChange(formatter.string(from: newDate))
+                }
+            ),
+            displayedComponents: .date
+        )
+        .id(id)
     }
 }
 
@@ -430,7 +377,12 @@ extension Color {
     }
     
     func toHex() -> String? {
-        // TODO: Implement
-        return nil
+        guard let components = cgColor?.components else { return nil }
+        guard components.count >= 3 else { return nil }
+        let r = components[0]
+        let g = components[1]
+        let b = components[2]
+        let hex = String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
+        return hex
     }
-} 
+}

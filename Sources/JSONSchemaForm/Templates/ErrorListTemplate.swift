@@ -1,15 +1,14 @@
-import SwiftUI
 import JSONSchema
-
+import SwiftUI
 
 /// Represents a validation error
-struct ValidationError: Identifiable {
-    var id: String { stack }
-    var name: String
-    var message: String
-    var stack: String
-    var property: String?
-    var schemaPath: String?
+public struct ValidationError: Identifiable {
+    public var id: String { stack }
+    public var name: String
+    public var message: String
+    public var stack: String
+    public var property: String?
+    public var schemaPath: String?
 }
 
 /// ErrorListTemplate displays a list of validation errors at the form level
@@ -21,26 +20,26 @@ struct ErrorListTemplate: View {
         self.errors = props.errors
         self.errorSchema = props.errorSchema
     }
-    
+
     var body: some View {
         if !errors.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Errors")
                     .font(.headline)
                     .foregroundColor(.red)
-                
+
                 ForEach(errors) { error in
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.red)
-                        
+
                         VStack(alignment: .leading, spacing: 2) {
                             if !error.property.isNilOrEmpty {
                                 Text("Property: \(error.property!)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             Text(error.message)
                                 .foregroundColor(.red)
                         }
@@ -65,4 +64,4 @@ extension Optional where Wrapped == String {
     var isNilOrEmpty: Bool {
         self == nil || self!.isEmpty
     }
-} 
+}

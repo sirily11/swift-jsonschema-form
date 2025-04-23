@@ -26,7 +26,7 @@ struct FormState {
 }
 
 /// A SwiftUI form component that renders a form from a JSON schema
-struct JSONSchemaForm: View {
+public struct JSONSchemaForm: View {
     /// The schema defining the form structure
     let schema: JSONSchema
     
@@ -109,18 +109,19 @@ struct JSONSchemaForm: View {
         self.idPrefix = idPrefix
         self.idSeparator = idSeparator
         
-        // Create initial state
-        let initialState = FormState(
+        // Create initial state with the same schema reference
+        let initialErrors: [ValidationError] = []
+        let initialErrorSchema: [String: Any] = [:]
+        
+        // Initialize state property
+        self._state = State(initialValue: FormState(
             schema: schema,
             uiSchema: uiSchema,
             formData: formData,
             edit: formData != nil,
-            errors: [],
-            errorSchema: [:]
-        )
-        
-        // Initialize state property
-        self._state = State(initialValue: initialState)
+            errors: initialErrors,
+            errorSchema: initialErrorSchema
+        ))
         
         // After initialization, update state with validation if needed
         if liveValidate && formData != nil {
@@ -129,18 +130,16 @@ struct JSONSchemaForm: View {
                 schema: schema,
                 customValidate: customValidate
             )
-            self._state = State(initialValue: FormState(
-                schema: schema,
-                uiSchema: uiSchema,
-                formData: formData,
-                edit: formData != nil,
-                errors: validationResult.errors,
-                errorSchema: validationResult.errorSchema
-            ))
+            
+            // Update just the error properties, keeping the same schema reference
+            var validatedState = self._state.wrappedValue
+            validatedState.errors = validationResult.errors
+            validatedState.errorSchema = validationResult.errorSchema
+            self._state = State(initialValue: validatedState)
         }
     }
     
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if showErrorList && !state.errors.isEmpty {
                 errorList
@@ -202,9 +201,10 @@ struct JSONSchemaForm: View {
             validationResult = ValidationResult(errors: [], errorSchema: [:])
         }
         
-        // Create new state with the updated data
+        // Create new state with the updated data but keep using the original schema
+        // to preserve field order
         let newState = FormState(
-            schema: schema,
+            schema: self.schema, // Use the original schema instead of a copy
             uiSchema: uiSchema,
             formData: formData,
             edit: formData != nil,
@@ -235,8 +235,12 @@ struct JSONSchemaForm: View {
         
         // If there are validation errors, update state and call onError
         if !errors.isEmpty {
-            state.errors = errors
-            state.errorSchema = validationResult.errorSchema
+            // Update only the errors and errorSchema in state, keeping the original schema
+            var updatedState = state
+            updatedState.errors = errors
+            updatedState.errorSchema = validationResult.errorSchema
+            state = updatedState
+            
             onError?(errors)
             return
         }
@@ -272,7 +276,7 @@ struct JSONSchemaForm: View {
                                 .string("Miami"),
                                 .string("San Francisco"),
                                 .string("San Francisco"),
-                            ])
+                            ]),
                     ],
                     required: ["city", "street"]
                 ),

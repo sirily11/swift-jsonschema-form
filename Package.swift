@@ -18,6 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/sirily11/swift-json-schema", branch: "main"),
+        .package(url: "https://github.com/apple/swift-collections", from: "1.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -25,6 +26,7 @@ let package = Package(
         .target(
             name: "JSONSchemaForm", dependencies: [
                 .product(name: "JSONSchema", package: "swift-json-schema"),
+                .product(name: "Collections", package: "swift-collections"),
             ]
         ),
         .testTarget(

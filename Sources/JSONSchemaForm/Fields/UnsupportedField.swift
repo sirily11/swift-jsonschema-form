@@ -5,6 +5,7 @@ import JSONSchema
 struct UnsupportedField: Field {
     var schema: JSONSchema = .null()
     var reason: String
+    var propertyName: String?
     
     init(reason: String) {
         self.reason = reason

@@ -1,5 +1,5 @@
-import SwiftUI
 import JSONSchema
+import SwiftUI
 
 /// Implements a boolean field that can render as checkbox, radio, or select based on uiSchema
 struct BooleanField: Field {
@@ -9,15 +9,17 @@ struct BooleanField: Field {
     var formData: Bool?
     var required: Bool
     var onChange: (Bool?) -> Void
-    
+    var propertyName: String?
+
     private var widget: String? {
         if let uiSchema = uiSchema,
-           let widgetType = uiSchema["ui:widget"] as? String {
+           let widgetType = uiSchema["ui:widget"] as? String
+        {
             return widgetType
         }
         return nil
     }
-    
+
     var body: some View {
         VStack(alignment: .leading) {
             switch widget {
@@ -59,7 +61,7 @@ private struct RadioWidget: View {
     var value: Bool?
     var required: Bool
     var onChange: (Bool?) -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading) {
             if !label.isEmpty {
@@ -67,7 +69,7 @@ private struct RadioWidget: View {
                     .font(.headline)
                     .padding(.bottom, 4)
             }
-            
+
             VStack(alignment: .leading) {
                 Button {
                     onChange(true)
@@ -79,7 +81,7 @@ private struct RadioWidget: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                
+
                 Button {
                     onChange(false)
                 } label: {
@@ -102,7 +104,7 @@ private struct SelectWidget: View {
     var value: Bool?
     var required: Bool
     var onChange: (Bool?) -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading) {
             if !label.isEmpty {
@@ -110,7 +112,7 @@ private struct SelectWidget: View {
                     .font(.headline)
                     .padding(.bottom, 4)
             }
-            
+
             Picker(selection: Binding(
                 get: { self.value },
                 set: { onChange($0) }
@@ -135,7 +137,7 @@ private struct CheckboxWidget: View {
     var value: Bool
     var required: Bool
     var onChange: (Bool?) -> Void
-    
+
     var body: some View {
         Toggle(isOn: Binding(
             get: { self.value },
@@ -145,4 +147,4 @@ private struct CheckboxWidget: View {
                 .font(.headline)
         }
     }
-} 
+}

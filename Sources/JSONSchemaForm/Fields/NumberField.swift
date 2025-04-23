@@ -1,5 +1,5 @@
-import SwiftUI
 import JSONSchema
+import SwiftUI
 
 /// Implements a number field that can render as text input, range, radio buttons, etc. based on uiSchema
 struct NumberField: Field {
@@ -9,10 +9,12 @@ struct NumberField: Field {
     var formData: Double?
     var required: Bool
     var onChange: (Double?) -> Void
+    var propertyName: String?
     
     private var widget: String? {
         if let uiSchema = uiSchema,
-           let widgetType = uiSchema["ui:widget"] as? String {
+           let widgetType = uiSchema["ui:widget"] as? String
+        {
             return widgetType
         }
         return nil
@@ -20,7 +22,7 @@ struct NumberField: Field {
     
     // Extract min, max, step from schema if available
     private var range: (min: Double?, max: Double?, step: Double?) {
-      return (nil, nil, nil)
+        return (nil, nil, nil)
     }
     
     // Check if the number schema has enum values
@@ -101,34 +103,25 @@ private struct NumberTextWidget: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if !label.isEmpty {
-                Text(label)
-                    .font(.headline)
-                    .padding(.bottom, 4)
-            }
-            
-            TextField("", text: $stringValue, onCommit: {
-                // Convert string to number on commit
-                if let newValue = Double(stringValue) {
-                    // Apply constraints if they exist
-                    var constrainedValue = newValue
-                    if let min = range.min, constrainedValue < min {
-                        constrainedValue = min
-                        stringValue = "\(min)"
-                    }
-                    if let max = range.max, constrainedValue > max {
-                        constrainedValue = max
-                        stringValue = "\(max)"
-                    }
-                    onChange(constrainedValue)
-                } else if stringValue.isEmpty {
-                    onChange(nil)
+        TextField(label, text: $stringValue, onCommit: {
+            // Convert string to number on commit
+            if let newValue = Double(stringValue) {
+                // Apply constraints if they exist
+                var constrainedValue = newValue
+                if let min = range.min, constrainedValue < min {
+                    constrainedValue = min
+                    stringValue = "\(min)"
                 }
-            })
-            .textFieldStyle(RoundedBorderTextFieldStyle())
-            .id(id)
-        }
+                if let max = range.max, constrainedValue > max {
+                    constrainedValue = max
+                    stringValue = "\(max)"
+                }
+                onChange(constrainedValue)
+            } else if stringValue.isEmpty {
+                onChange(nil)
+            }
+        })
+        .id(id)
     }
 }
 
@@ -208,7 +201,7 @@ private struct RangeWidget: View {
             
             HStack {
                 // Slider for the range
-                Slider(value: bindingValue, in: minValue...maxValue, step: range.step ?? 1.0)
+                Slider(value: bindingValue, in: minValue ... maxValue, step: range.step ?? 1.0)
                 
                 // Text showing the current value
                 Text("\(Int(bindingValue.wrappedValue))")
@@ -252,4 +245,4 @@ private struct RadioEnumWidget: View {
         }
         .id(id)
     }
-} 
+}
