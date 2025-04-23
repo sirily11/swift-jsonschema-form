@@ -76,7 +76,7 @@ struct JSONSchemaForm: View {
     @State private var state: FormState
     
     /// Initializes a new JSONSchemaForm
-    init(
+    public init(
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
         formData: Any? = nil,
