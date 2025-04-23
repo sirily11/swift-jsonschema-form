@@ -1,6 +1,6 @@
+import Collections
 import JSONSchema
 import SwiftUI
-import Collections
 
 /// Implements an object field that renders a group of property fields
 struct ObjectField: Field {
@@ -22,7 +22,7 @@ struct ObjectField: Field {
         }
 
         let dict = schema.objectSchema?.properties ?? [:]
-        let orderedProperties =  OrderedDictionary(uniqueKeys: dict.keys, values: dict.values)
+        let orderedProperties = OrderedDictionary(uniqueKeys: dict.keys, values: dict.values)
         return orderedProperties
     }
     
@@ -52,7 +52,7 @@ struct ObjectField: Field {
         // If properties exist, use them as default order
         if let properties = properties {
             // Add properties not specified in uiOrder
-            for propertyName in properties.keys {
+            for propertyName in properties.keys.sorted() {
                 if !order.contains(propertyName) {
                     order.append(propertyName)
                 }

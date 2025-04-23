@@ -25,6 +25,25 @@ struct FormState {
     var errorSchema: [String: Any]
 }
 
+
+public enum FormData: Equatable {
+    case object(properties: [String: Any])
+    case array(items: [Any])
+
+
+    public static func == (lhs: FormData, rhs: FormData) -> Bool {
+        switch (lhs, rhs) {
+        case (.object(let lhsProperties), .object(let rhsProperties)):
+            return NSDictionary(dictionary: lhsProperties).isEqual(to: rhsProperties)
+        case (.array(let lhsItems), .array(let rhsItems)):
+            return NSArray(array: lhsItems).isEqual(to: rhsItems)
+        default:
+            return false
+        }
+    }
+    
+}
+
 /// A SwiftUI form component that renders a form from a JSON schema
 public struct JSONSchemaForm: View {
     /// The schema defining the form structure
@@ -34,11 +53,7 @@ public struct JSONSchemaForm: View {
     var uiSchema: [String: Any]?
     
     /// Initial form data
-    var formData: Any?
-    
-    /// Callback when form data changes
-    var onChange: ((Any?) -> Void)?
-    
+    var formData: Binding<FormData>
     /// Callback when form is submitted
     var onSubmit: ((Any?) -> Void)?
     
@@ -79,8 +94,7 @@ public struct JSONSchemaForm: View {
     public init(
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
-        formData: Any? = nil,
-        onChange: ((Any?) -> Void)? = nil,
+        formData: Binding<FormData>,
         onSubmit: ((Any?) -> Void)? = nil,
         onError: (([ValidationError]) -> Void)? = nil,
         formContext: [String: Any]? = nil,
@@ -96,7 +110,6 @@ public struct JSONSchemaForm: View {
         self.schema = schema
         self.uiSchema = uiSchema
         self.formData = formData
-        self.onChange = onChange
         self.onSubmit = onSubmit
         self.onError = onError
         self.formContext = formContext
@@ -214,7 +227,6 @@ public struct JSONSchemaForm: View {
         
         // Update state and call onChange callback
         state = newState
-        onChange?(formData)
     }
     
     /// Handles form submission
@@ -248,40 +260,4 @@ public struct JSONSchemaForm: View {
         // If validation passes, call onSubmit
         onSubmit?(state.formData)
     }
-}
-
-#Preview {
-    JSONSchemaForm(
-        schema: .object(
-            description: "Some field",
-            properties: [
-                "name": .string(description: "Some field"),
-                "age": .integer(description: "Some field"),
-                "isActive": .boolean(description: "Some field"),
-                "email": .string(description: "Some field"),
-                "interests": .array(
-                    description: "Some field",
-                    items: .string(description: "Some field")
-                ),
-                "address": .object(
-                    description: "Some object",
-                    properties: [
-                        "city": .enum(
-                            description: "List of city",
-                            values: [
-                                .string("New York"),
-                                .string("Los Angeles"),
-                                .string("Chicago"),
-                                .string("Houston"),
-                                .string("Miami"),
-                                .string("San Francisco"),
-                                .string("San Francisco"),
-                            ]),
-                    ],
-                    required: ["city", "street"]
-                ),
-            ],
-            required: ["someField"]
-        )
-    )
 }
