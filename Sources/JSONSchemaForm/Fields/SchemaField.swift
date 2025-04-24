@@ -9,7 +9,6 @@ struct SchemaField: Field {
     var id: String
     var formData: Binding<FormData>
     var required: Bool
-    var onChange: (Any?) -> Void
     var propertyName: String?
 
     // Extract the field widget from uiSchema if present
@@ -40,9 +39,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    onChange(newValue)
-                },
                 propertyName: propertyName
             )
 
@@ -53,9 +49,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    onChange(newValue)
-                },
                 propertyName: propertyName
             )
 
@@ -67,10 +60,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    // Convert Double back to Int for integer fields
-                    onChange(newValue.map { Int($0) })
-                },
                 propertyName: propertyName
             )
 
@@ -81,9 +70,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    onChange(newValue)
-                },
                 propertyName: propertyName
             )
 
@@ -94,9 +80,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    onChange(newValue)
-                },
                 propertyName: propertyName
             )
 
@@ -107,9 +90,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    onChange(newValue)
-                },
                 propertyName: propertyName
             )
 
@@ -127,9 +107,6 @@ struct SchemaField: Field {
                 id: id,
                 formData: formData,
                 required: required,
-                onChange: { newValue in
-                    onChange(newValue)
-                },
                 propertyName: propertyName
             )
 

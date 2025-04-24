@@ -8,7 +8,6 @@ struct StringField: Field {
     var id: String
     var formData: Binding<FormData>
     var required: Bool
-    var onChange: (String?) -> Void
     var propertyName: String?
 
     private var widget: String? {
@@ -35,25 +34,31 @@ struct StringField: Field {
                     TextAreaWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value,
-                        required: required,
-                        onChange: onChange
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .string($0) }
+                        ),
+                        required: required
                     )
                 case "password":
                     PasswordWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value,
-                        required: required,
-                        onChange: onChange
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .string($0) }
+                        ),
+                        required: required
                     )
                 case "color":
                     ColorWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value ?? "#000000",
-                        required: required,
-                        onChange: onChange
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .string($0) }
+                        ),
+                        required: required
                     )
                 default:
                     // Handle formats for specialized widgets
@@ -63,42 +68,52 @@ struct StringField: Field {
                             EmailWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: value,
-                                required: required,
-                                onChange: onChange
+                                value: Binding(
+                                    get: { value },
+                                    set: { formData.wrappedValue = .string($0) }
+                                ),
+                                required: required
                             )
                         case "uri":
                             URLWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: value,
-                                required: required,
-                                onChange: onChange
+                                value: Binding(
+                                    get: { value },
+                                    set: { formData.wrappedValue = .string($0) }
+                                ),
+                                required: required
                             )
                         case "date-time":
                             DateTimeWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: value,
-                                required: required,
-                                onChange: onChange
+                                value: Binding(
+                                    get: { value },
+                                    set: { formData.wrappedValue = .string($0) }
+                                ),
+                                required: required
                             )
                         case "date":
                             DateWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: value,
-                                required: required,
-                                onChange: onChange
+                                value: Binding(
+                                    get: { value },
+                                    set: { formData.wrappedValue = .string($0) }
+                                ),
+                                required: required
                             )
                         default:
                             // Default to text input for unknown formats
                             TextWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: value,
-                                required: required,
-                                onChange: onChange
+                                value: Binding(
+                                    get: { value },
+                                    set: { formData.wrappedValue = .string($0) }
+                                ),
+                                required: required
                             )
                         }
                     } else {
@@ -106,15 +121,19 @@ struct StringField: Field {
                         TextWidget(
                             id: id,
                             label: fieldTitle,
-                            value: value,
-                            required: required,
-                            onChange: onChange
+                            value: Binding(
+                                get: { value },
+                                set: { formData.wrappedValue = .string($0) }
+                            ),
+                            required: required
                         )
                     }
                 }
             } else {
                 InvalidValueType(
-                    valueType: "\(type(of: formData.wrappedValue))", expectedType: "string")
+                    valueType: formData.wrappedValue,
+                    expectedType: FormData.string("")
+                )
             }
         }
     }
@@ -126,9 +145,8 @@ struct StringField: Field {
 private struct TextWidget: View {
     var id: String
     var label: String
-    var value: String
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     var body: some View {
         var title = label
@@ -137,10 +155,7 @@ private struct TextWidget: View {
         }
         return TextField(
             title,
-            text: Binding(
-                get: { self.value },
-                set: { onChange($0.isEmpty ? nil : $0) }
-            )
+            text: value
         )
         .id(id)
     }
@@ -150,9 +165,8 @@ private struct TextWidget: View {
 private struct TextAreaWidget: View {
     var id: String
     var label: String
-    var value: String
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -160,10 +174,7 @@ private struct TextAreaWidget: View {
                 Text(label)
             }
             TextEditor(
-                text: Binding(
-                    get: { self.value },
-                    set: { onChange($0.isEmpty ? nil : $0) }
-                )
+                text: value
             )
             .frame(minHeight: 100)
             .id(id)
@@ -175,9 +186,8 @@ private struct TextAreaWidget: View {
 private struct PasswordWidget: View {
     var id: String
     var label: String
-    var value: String
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     @State private var isSecured: Bool = true
 
@@ -187,17 +197,13 @@ private struct PasswordWidget: View {
                 if isSecured {
                     SecureField(
                         label,
-                        text: Binding(
-                            get: { self.value },
-                            set: { onChange($0.isEmpty ? nil : $0) }
-                        ))
+                        text: value
+                    )
                 } else {
                     TextField(
                         label,
-                        text: Binding(
-                            get: { self.value },
-                            set: { onChange($0.isEmpty ? nil : $0) }
-                        ))
+                        text: value
+                    )
                 }
 
                 Button(action: {
@@ -217,13 +223,12 @@ private struct PasswordWidget: View {
 private struct ColorWidget: View {
     var id: String
     var label: String
-    var value: String
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     // Convert hex string to Color
     private var color: Color {
-        Color(hex: value) ?? .black
+        Color(hex: value.wrappedValue) ?? .black
     }
 
     var body: some View {
@@ -234,7 +239,7 @@ private struct ColorWidget: View {
                 set: { newColor in
                     // Convert Color to hex string
                     if let hex = newColor.toHex() {
-                        onChange(hex)
+                        value.wrappedValue = hex
                     }
                 }
             )
@@ -247,17 +252,13 @@ private struct ColorWidget: View {
 private struct EmailWidget: View {
     var id: String
     var label: String
-    var value: String
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     var body: some View {
         TextField(
             label,
-            text: Binding(
-                get: { self.value },
-                set: { onChange($0.isEmpty ? nil : $0) }
-            )
+            text: value
         )
         .id(id)
     }
@@ -267,17 +268,13 @@ private struct EmailWidget: View {
 private struct URLWidget: View {
     var id: String
     var label: String
-    var value: String
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     var body: some View {
         TextField(
             label,
-            text: Binding(
-                get: { self.value },
-                set: { onChange($0.isEmpty ? nil : $0) }
-            )
+            text: value
         )
         .textFieldStyle(RoundedBorderTextFieldStyle())
         .id(id)
@@ -288,27 +285,24 @@ private struct URLWidget: View {
 private struct DateTimeWidget: View {
     var id: String
     var label: String
-    var value: String?
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     @State private var date: Date
 
     init(
-        id: String, label: String, value: String?, required: Bool,
-        onChange: @escaping (String?) -> Void
+        id: String, label: String, value: Binding<String>, required: Bool
     ) {
         self.id = id
         self.label = label
         self.value = value
         self.required = required
-        self.onChange = onChange
 
         // Initialize date from string or current date
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
 
-        if let value = value, let parsedDate = formatter.date(from: value) {
+        if let parsedDate = formatter.date(from: value.wrappedValue) {
             _date = State(initialValue: parsedDate)
         } else {
             _date = State(initialValue: Date())
@@ -323,7 +317,7 @@ private struct DateTimeWidget: View {
                 set: { newDate in
                     let formatter = ISO8601DateFormatter()
                     formatter.formatOptions = [.withInternetDateTime]
-                    onChange(formatter.string(from: newDate))
+                    value.wrappedValue = formatter.string(from: newDate)
                 }
             ),
             displayedComponents: [.date, .hourAndMinute]
@@ -336,27 +330,24 @@ private struct DateTimeWidget: View {
 private struct DateWidget: View {
     var id: String
     var label: String
-    var value: String?
+    var value: Binding<String>
     var required: Bool
-    var onChange: (String?) -> Void
 
     @State private var date: Date
 
     init(
-        id: String, label: String, value: String?, required: Bool,
-        onChange: @escaping (String?) -> Void
+        id: String, label: String, value: Binding<String>, required: Bool
     ) {
         self.id = id
         self.label = label
         self.value = value
         self.required = required
-        self.onChange = onChange
 
         // Initialize date from string or current date
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
 
-        if let value = value, let parsedDate = formatter.date(from: value) {
+        if let parsedDate = formatter.date(from: value.wrappedValue) {
             _date = State(initialValue: parsedDate)
         } else {
             _date = State(initialValue: Date())
@@ -371,7 +362,7 @@ private struct DateWidget: View {
                 set: { newDate in
                     let formatter = DateFormatter()
                     formatter.dateFormat = "yyyy-MM-dd"
-                    onChange(formatter.string(from: newDate))
+                    value.wrappedValue = formatter.string(from: newDate)
                 }
             ),
             displayedComponents: .date

@@ -8,7 +8,6 @@ struct NumberField: Field {
     var id: String
     var formData: Binding<FormData>
     var required: Bool
-    var onChange: (Double?) -> Void
     var propertyName: String?
 
     private var widget: String? {
@@ -38,10 +37,12 @@ struct NumberField: Field {
                     RadioEnumWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value,
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .number($0) }
+                        ),
                         options: enumValues,
-                        required: required,
-                        onChange: onChange
+                        required: required
                     )
                 } else {
                     switch widget {
@@ -49,34 +50,42 @@ struct NumberField: Field {
                         UpDownWidget(
                             id: id,
                             label: fieldTitle,
-                            value: value,
+                            value: Binding(
+                                get: { value },
+                                set: { formData.wrappedValue = .number($0) }
+                            ),
                             range: range,
-                            required: required,
-                            onChange: onChange
+                            required: required
                         )
                     case "range":
                         RangeWidget(
                             id: id,
                             label: fieldTitle,
-                            value: value,
+                            value: Binding(
+                                get: { value },
+                                set: { formData.wrappedValue = .number($0) }
+                            ),
                             range: range,
-                            required: required,
-                            onChange: onChange
+                            required: required
                         )
                     default:
                         NumberTextWidget(
                             id: id,
                             label: fieldTitle,
-                            value: value,
+                            value: Binding(
+                                get: { value },
+                                set: { formData.wrappedValue = .number($0) }
+                            ),
                             range: range,
-                            required: required,
-                            onChange: onChange
+                            required: required
                         )
                     }
                 }
             } else {
                 InvalidValueType(
-                    valueType: "\(type(of: formData.wrappedValue))", expectedType: "string")
+                    valueType: formData.wrappedValue,
+                    expectedType: FormData.number(0)
+                )
             }
         }
     }
@@ -88,27 +97,24 @@ struct NumberField: Field {
 private struct NumberTextWidget: View {
     var id: String
     var label: String
-    var value: Double?
+    var value: Binding<Double>
     var range: (min: Double?, max: Double?, step: Double?)
     var required: Bool
-    var onChange: (Double?) -> Void
 
     @State private var stringValue: String
 
     init(
-        id: String, label: String, value: Double?,
-        range: (min: Double?, max: Double?, step: Double?), required: Bool,
-        onChange: @escaping (Double?) -> Void
+        id: String, label: String, value: Binding<Double>,
+        range: (min: Double?, max: Double?, step: Double?), required: Bool
     ) {
         self.id = id
         self.label = label
         self.value = value
         self.range = range
         self.required = required
-        self.onChange = onChange
 
         // Initialize string value from number
-        self._stringValue = State(initialValue: value != nil ? "\(value!)" : "")
+        self._stringValue = State(initialValue: "\(value.wrappedValue)")
     }
 
     var body: some View {
@@ -127,9 +133,7 @@ private struct NumberTextWidget: View {
                         constrainedValue = max
                         stringValue = "\(max)"
                     }
-                    onChange(constrainedValue)
-                } else if stringValue.isEmpty {
-                    onChange(nil)
+
                 }
             }
         )
@@ -141,10 +145,9 @@ private struct NumberTextWidget: View {
 private struct UpDownWidget: View {
     var id: String
     var label: String
-    var value: Double?
+    var value: Binding<Double>
     var range: (min: Double?, max: Double?, step: Double?)
     var required: Bool
-    var onChange: (Double?) -> Void
 
     private var step: Double {
         return range.step ?? 1.0
@@ -152,8 +155,8 @@ private struct UpDownWidget: View {
 
     private var bindingValue: Binding<Double> {
         Binding(
-            get: { self.value ?? 0.0 },
-            set: { onChange($0) }
+            get: { self.value.wrappedValue },
+            set: { value.wrappedValue = $0 }
         )
     }
 
@@ -183,10 +186,9 @@ private struct UpDownWidget: View {
 private struct RangeWidget: View {
     var id: String
     var label: String
-    var value: Double
+    var value: Binding<Double>
     var range: (min: Double?, max: Double?, step: Double?)
     var required: Bool
-    var onChange: (Double?) -> Void
 
     private var minValue: Double {
         return range.min ?? 0.0
@@ -194,13 +196,6 @@ private struct RangeWidget: View {
 
     private var maxValue: Double {
         return range.max ?? 100.0
-    }
-
-    private var bindingValue: Binding<Double> {
-        Binding(
-            get: { self.value ?? minValue },
-            set: { onChange($0) }
-        )
     }
 
     var body: some View {
@@ -213,10 +208,10 @@ private struct RangeWidget: View {
 
             HStack {
                 // Slider for the range
-                Slider(value: bindingValue, in: minValue...maxValue, step: range.step ?? 1.0)
+                Slider(value: value, in: minValue...maxValue, step: range.step ?? 1.0)
 
                 // Text showing the current value
-                Text("\(Int(bindingValue.wrappedValue))")
+                Text("\(Int(value.wrappedValue))")
                     .frame(width: 40, alignment: .trailing)
                     .foregroundColor(.gray)
             }
@@ -229,10 +224,9 @@ private struct RangeWidget: View {
 private struct RadioEnumWidget: View {
     var id: String
     var label: String
-    var value: Double?
+    var value: Binding<Double>
     var options: [Double]
     var required: Bool
-    var onChange: (Double?) -> Void
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -244,10 +238,10 @@ private struct RadioEnumWidget: View {
 
             ForEach(options, id: \.self) { option in
                 Button {
-                    onChange(option)
+                    value.wrappedValue = option
                 } label: {
                     HStack {
-                        Image(systemName: value == option ? "circle.fill" : "circle")
+                        Image(systemName: value.wrappedValue == option ? "circle.fill" : "circle")
                         Text("\(option)")
                     }
                     .contentShape(Rectangle())

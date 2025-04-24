@@ -8,7 +8,6 @@ struct BooleanField: Field {
     var id: String
     var formData: Binding<FormData>
     var required: Bool
-    var onChange: (Bool?) -> Void
     var propertyName: String?
 
     private var widget: String? {
@@ -28,30 +27,38 @@ struct BooleanField: Field {
                     RadioWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value,
-                        required: required,
-                        onChange: onChange
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .boolean($0) }
+                        ),
+                        required: required
                     )
                 case "select":
                     SelectWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value,
-                        required: required,
-                        onChange: onChange
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .boolean($0) }
+                        ),
+                        required: required
                     )
                 default:
                     CheckboxWidget(
                         id: id,
                         label: fieldTitle,
-                        value: value,
-                        required: required,
-                        onChange: onChange
+                        value: Binding(
+                            get: { value },
+                            set: { formData.wrappedValue = .boolean($0) }
+                        ),
+                        required: required
                     )
                 }
             } else {
                 InvalidValueType(
-                    valueType: "\(type(of: formData.wrappedValue))", expectedType: "boolean")
+                    valueType: formData.wrappedValue,
+                    expectedType: FormData.boolean(false)
+                )
             }
         }
     }
@@ -63,9 +70,8 @@ struct BooleanField: Field {
 private struct RadioWidget: View {
     var id: String
     var label: String
-    var value: Bool?
+    var value: Binding<Bool>
     var required: Bool
-    var onChange: (Bool?) -> Void
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -77,10 +83,10 @@ private struct RadioWidget: View {
 
             VStack(alignment: .leading) {
                 Button {
-                    onChange(true)
+                    value.wrappedValue = true
                 } label: {
                     HStack {
-                        Image(systemName: value == true ? "circle.fill" : "circle")
+                        Image(systemName: value.wrappedValue == true ? "circle.fill" : "circle")
                         Text("True")
                     }
                     .contentShape(Rectangle())
@@ -88,10 +94,10 @@ private struct RadioWidget: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    onChange(false)
+                    value.wrappedValue = false
                 } label: {
                     HStack {
-                        Image(systemName: value == false ? "circle.fill" : "circle")
+                        Image(systemName: value.wrappedValue == false ? "circle.fill" : "circle")
                         Text("False")
                     }
                     .contentShape(Rectangle())
@@ -106,9 +112,8 @@ private struct RadioWidget: View {
 private struct SelectWidget: View {
     var id: String
     var label: String
-    var value: Bool?
+    var value: Binding<Bool>
     var required: Bool
-    var onChange: (Bool?) -> Void
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -119,10 +124,7 @@ private struct SelectWidget: View {
             }
 
             Picker(
-                selection: Binding(
-                    get: { self.value },
-                    set: { onChange($0) }
-                )
+                selection: value
             ) {
                 if !required {
                     Text("").tag(nil as Bool?)
@@ -141,16 +143,12 @@ private struct SelectWidget: View {
 private struct CheckboxWidget: View {
     var id: String
     var label: String
-    var value: Bool
+    var value: Binding<Bool>
     var required: Bool
-    var onChange: (Bool?) -> Void
 
     var body: some View {
         Toggle(
-            isOn: Binding(
-                get: { self.value },
-                set: { onChange($0) }
-            )
+            isOn: value
         ) {
             Text(label)
                 .font(.headline)

@@ -8,7 +8,6 @@ struct ArrayField: Field {
     var id: String
     var formData: Binding<FormData>
     var required: Bool
-    var onChange: ([Any]?) -> Void
     var propertyName: String?
 
     // Keep a stable field identifier for array items
@@ -63,9 +62,6 @@ struct ArrayField: Field {
                                         formData.wrappedValue = FormData.array(items: updatedItems)
                                     }),
                                 required: true,
-                                onChange: { newValue in
-                                    updateItem(at: index, value: newValue)
-                                },
                                 propertyName: propertyName
                             )
                         }
@@ -82,7 +78,9 @@ struct ArrayField: Field {
                 }
             } else {
                 InvalidValueType(
-                    valueType: "\(type(of: formData.wrappedValue))", expectedType: "array")
+                    valueType: formData.wrappedValue,
+                    expectedType: FormData.array(items: [])
+                )
             }
         }
         .onAppear {
@@ -159,7 +157,6 @@ struct ArrayField: Field {
             }
 
             items[index] = value
-
             formData.wrappedValue = FormData.array(items: items)
         }
     }

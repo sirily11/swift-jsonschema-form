@@ -1,10 +1,12 @@
 import SwiftUI
 
-struct InvalidValueType: View {
-    let valueType: String
-    let expectedType: String
+struct InvalidValueType<Value: Describable>: View {
+    let valueType: Value
+    let expectedType: Value
 
     var body: some View {
-        Text("Invalid value type: \(valueType). Expected type: \(expectedType)")
+        Text(
+            "Invalid value type: \(valueType.describe()). Expected type: \(expectedType.describe())"
+        )
     }
 }
