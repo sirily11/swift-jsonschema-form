@@ -16,16 +16,66 @@ struct SchemaField: Field {
         return uiSchema?["ui:field"] as? String
     }
 
-    var body: some View {
-        // If a custom field is specified in uiSchema, use it
-        if let customField = uiField {
-            // In a complete implementation, this would look up the custom field
-            // from a registry and render it
-            Text("Custom field: \(customField)")
-                .foregroundColor(.blue)
+    init(
+        schema: JSONSchema, uiSchema: [String: Any]?, id: String, formData: Binding<FormData>,
+        required: Bool, propertyName: String? = nil
+    ) {
+        self.schema = schema
+        self.uiSchema = uiSchema
+        self.id = id
+        self.formData = formData
+        self.required = required
+        self.propertyName = propertyName
+    }
+
+    /// Returns a binding for schema data that correctly updates the parent form data
+    private var schemaDataBinding: Binding<FormData> {
+        if let propertyName = propertyName {
+            // This is a nested field, create a binding that updates the parent
+            return Binding<FormData>(
+                get: {
+                    // Extract the current value from parent formData
+                    switch formData.wrappedValue {
+                    case .object(let properties):
+                        return properties[propertyName] ?? FormData.fromSchemaType(schema: schema)
+                    default:
+                        // If parent is not an object, create default value for this schema
+                        return FormData.fromSchemaType(schema: schema)
+                    }
+                },
+                set: { newValue in
+                    // Update the parent formData with this field's new value
+                    var updatedFormData = formData.wrappedValue
+                    switch updatedFormData {
+                    case .object(var properties):
+                        // Update the specific property
+                        properties[propertyName] = newValue
+                        // Set the updated object back to form data
+                        formData.wrappedValue = .object(properties: properties)
+                    default:
+                        // If parent wasn't an object before, create one with this property
+                        formData.wrappedValue = .object(properties: [propertyName: newValue])
+                    }
+                }
+            )
         } else {
-            // Otherwise, determine the appropriate field based on schema type
-            renderFieldBasedOnSchemaType()
+            // This is a root-level field, use the formData binding directly
+            return formData
+        }
+    }
+
+    var body: some View {
+        Group {
+            // If a custom field is specified in uiSchema, use it
+            if let customField = uiField {
+                // In a complete implementation, this would look up the custom field
+                // from a registry and render it
+                Text("Custom field: \(customField)")
+                    .foregroundColor(.blue)
+            } else {
+                // Otherwise, determine the appropriate field based on schema type
+                renderFieldBasedOnSchemaType()
+            }
         }
     }
 
@@ -37,7 +87,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )
@@ -47,7 +97,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )
@@ -58,7 +108,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )
@@ -68,7 +118,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )
@@ -78,7 +128,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )
@@ -88,7 +138,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )
@@ -105,7 +155,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: formData,
+                formData: schemaDataBinding,
                 required: required,
                 propertyName: propertyName
             )

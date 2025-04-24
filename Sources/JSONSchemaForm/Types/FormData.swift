@@ -1,4 +1,5 @@
 import Foundation
+import JSONSchema
 
 protocol Describable {
     func describe() -> String
@@ -50,5 +51,45 @@ public enum FormData: Equatable, Describable {
 
         }
 
+    }
+}
+
+extension AnyCodable {
+    func toValue<T>() -> T? {
+        switch self.value {
+        case let value as T:
+            return value
+        default:
+            return nil
+        }
+    }
+}
+
+extension FormData {
+    public static func fromSchemaType(schema: JSONSchema) -> FormData {
+        switch schema.type {
+        case .object:
+            return .object(properties: [:])
+        case .array:
+            return .array(items: [])
+        case .string:
+            return .string(schema.defaultValue?.toValue() ?? "")
+        case .number:
+            return .number(schema.defaultValue?.toValue() ?? 0)
+        case .boolean:
+            return .boolean(schema.defaultValue?.toValue() ?? false)
+        case .enum:
+            return .enumField([])
+        case .integer:
+            return .number(0)
+        case .null:
+            return .null
+        case .oneOf:
+            return .null
+        case .anyOf:
+            return .null
+        case .allOf:
+            return .null
+        }
     }
 }

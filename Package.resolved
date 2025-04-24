@@ -1,5 +1,5 @@
 {
-  "originHash" : "3af4a3dc464065ef1f7a8521f23390f7675efd8a852a9ed5900576c249e21722",
+  "originHash" : "f06403c2245cf27ddd8480ff5a44d207df3cc821f244a752505c7e4964de289e",
   "pins" : [
     {
       "identity" : "swift-collections",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sirily11/swift-json-schema",
       "state" : {
-        "branch" : "main",
-        "revision" : "bdac5ca668bdd7561b41bf6adf182ebcb4cd39c9"
+        "revision" : "1191643b61aa1f5637cf130e045c3e1500fb6f2e",
+        "version" : "1.0.1"
       }
     }
   ],
