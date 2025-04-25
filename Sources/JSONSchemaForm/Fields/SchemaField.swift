@@ -29,33 +29,21 @@ struct SchemaField: Field {
     }
 
     /// Returns a binding for schema data that correctly updates the parent form data
-    private var schemaDataBinding: Binding<FormData> {
+    private func schemaDataBinding(schemaType: JSONSchema.SchemaType) -> Binding<FormData> {
         if let propertyName = propertyName {
             // This is a nested field, create a binding that updates the parent
             return Binding<FormData>(
                 get: {
-                    // Extract the current value from parent formData
-                    switch formData.wrappedValue {
-                    case .object(let properties):
-                        return properties[propertyName] ?? FormData.fromSchemaType(schema: schema)
-                    default:
-                        // If parent is not an object, create default value for this schema
-                        return FormData.fromSchemaType(schema: schema)
+                    if schemaType == .object {
+                        return formData.wrappedValue
                     }
+                    if case .object(let properties) = formData.wrappedValue {
+                        return properties[propertyName] ?? FormData.fromSchemaType(schema: schema)
+                    }
+                    return formData.wrappedValue
                 },
                 set: { newValue in
-                    // Update the parent formData with this field's new value
-                    var updatedFormData = formData.wrappedValue
-                    switch updatedFormData {
-                    case .object(var properties):
-                        // Update the specific property
-                        properties[propertyName] = newValue
-                        // Set the updated object back to form data
-                        formData.wrappedValue = .object(properties: properties)
-                    default:
-                        // If parent wasn't an object before, create one with this property
-                        formData.wrappedValue = .object(properties: [propertyName: newValue])
-                    }
+                    formData.wrappedValue = newValue
                 }
             )
         } else {
@@ -87,7 +75,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )
@@ -97,7 +85,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )
@@ -108,7 +96,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )
@@ -118,7 +106,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )
@@ -128,7 +116,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )
@@ -138,7 +126,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )
@@ -155,7 +143,7 @@ struct SchemaField: Field {
                 schema: schema,
                 uiSchema: uiSchema,
                 id: id,
-                formData: schemaDataBinding,
+                formData: schemaDataBinding(schemaType: schema.type),
                 required: required,
                 propertyName: propertyName
             )

@@ -7,12 +7,13 @@ struct StringField: Field {
     var uiSchema: [String: Any]?
     var id: String
     var formData: Binding<FormData>
+    @State private var value: String
     var required: Bool
     var propertyName: String?
 
     private var widget: String? {
         if let uiSchema = uiSchema,
-            let widgetType = uiSchema["ui:widget"] as? String
+           let widgetType = uiSchema["ui:widget"] as? String
         {
             return widgetType
         }
@@ -25,39 +26,50 @@ struct StringField: Field {
         return nil
     }
 
+    init(
+        schema: JSONSchema,
+        uiSchema: [String: Any]?,
+        id: String,
+        formData: Binding<FormData>,
+        required: Bool,
+        propertyName: String?
+    ) {
+        self.schema = schema
+        self.uiSchema = uiSchema
+        self.id = id
+        self.formData = formData
+        self.required = required
+        self.propertyName = propertyName
+        if case .string(let value) = formData.wrappedValue {
+            self.value = value
+        } else {
+            self.value = ""
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading) {
-
-            if case .string(let value) = formData.wrappedValue {
+            if case .string = formData.wrappedValue {
                 switch widget {
                 case "textarea":
                     TextAreaWidget(
                         id: id,
                         label: fieldTitle,
-                        value: Binding(
-                            get: { value },
-                            set: { formData.wrappedValue = .string($0) }
-                        ),
+                        value: $value,
                         required: required
                     )
                 case "password":
                     PasswordWidget(
                         id: id,
                         label: fieldTitle,
-                        value: Binding(
-                            get: { value },
-                            set: { formData.wrappedValue = .string($0) }
-                        ),
+                        value: $value,
                         required: required
                     )
                 case "color":
                     ColorWidget(
                         id: id,
                         label: fieldTitle,
-                        value: Binding(
-                            get: { value },
-                            set: { formData.wrappedValue = .string($0) }
-                        ),
+                        value: $value,
                         required: required
                     )
                 default:
@@ -68,40 +80,28 @@ struct StringField: Field {
                             EmailWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: Binding(
-                                    get: { value },
-                                    set: { formData.wrappedValue = .string($0) }
-                                ),
+                                value: $value,
                                 required: required
                             )
                         case "uri":
                             URLWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: Binding(
-                                    get: { value },
-                                    set: { formData.wrappedValue = .string($0) }
-                                ),
+                                value: $value,
                                 required: required
                             )
                         case "date-time":
                             DateTimeWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: Binding(
-                                    get: { value },
-                                    set: { formData.wrappedValue = .string($0) }
-                                ),
+                                value: $value,
                                 required: required
                             )
                         case "date":
                             DateWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: Binding(
-                                    get: { value },
-                                    set: { formData.wrappedValue = .string($0) }
-                                ),
+                                value: $value,
                                 required: required
                             )
                         default:
@@ -109,10 +109,7 @@ struct StringField: Field {
                             TextWidget(
                                 id: id,
                                 label: fieldTitle,
-                                value: Binding(
-                                    get: { value },
-                                    set: { formData.wrappedValue = .string($0) }
-                                ),
+                                value: $value,
                                 required: required
                             )
                         }
@@ -121,10 +118,7 @@ struct StringField: Field {
                         TextWidget(
                             id: id,
                             label: fieldTitle,
-                            value: Binding(
-                                get: { value },
-                                set: { formData.wrappedValue = .string($0) }
-                            ),
+                            value: $value,
                             required: required
                         )
                     }
@@ -135,6 +129,10 @@ struct StringField: Field {
                     expectedType: FormData.string("")
                 )
             }
+        }
+        .id("\(id)_string_field")
+        .onChange(of: value) { _, newValue in
+            formData.wrappedValue = .string(newValue)
         }
     }
 }

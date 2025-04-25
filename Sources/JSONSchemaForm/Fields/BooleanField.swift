@@ -7,16 +7,38 @@ struct BooleanField: Field {
     var uiSchema: [String: Any]?
     var id: String
     var formData: Binding<FormData>
+    @State private var value: Bool
     var required: Bool
     var propertyName: String?
 
     private var widget: String? {
         if let uiSchema = uiSchema,
-            let widgetType = uiSchema["ui:widget"] as? String
+           let widgetType = uiSchema["ui:widget"] as? String
         {
             return widgetType
         }
         return nil
+    }
+
+    init(
+        schema: JSONSchema,
+        uiSchema: [String: Any]?,
+        id: String,
+        formData: Binding<FormData>,
+        required: Bool,
+        propertyName: String?
+    ) {
+        self.schema = schema
+        self.uiSchema = uiSchema
+        self.id = id
+        self.formData = formData
+        self.required = required
+        self.propertyName = propertyName
+        if case .boolean(let value) = formData.wrappedValue {
+            self.value = value
+        } else {
+            self.value = false
+        }
     }
 
     var body: some View {
@@ -27,30 +49,21 @@ struct BooleanField: Field {
                     RadioWidget(
                         id: id,
                         label: fieldTitle,
-                        value: Binding(
-                            get: { value },
-                            set: { formData.wrappedValue = .boolean($0) }
-                        ),
+                        value: $value,
                         required: required
                     )
                 case "select":
                     SelectWidget(
                         id: id,
                         label: fieldTitle,
-                        value: Binding(
-                            get: { value },
-                            set: { formData.wrappedValue = .boolean($0) }
-                        ),
+                        value: $value,
                         required: required
                     )
                 default:
                     CheckboxWidget(
                         id: id,
                         label: fieldTitle,
-                        value: Binding(
-                            get: { value },
-                            set: { formData.wrappedValue = .boolean($0) }
-                        ),
+                        value: $value,
                         required: required
                     )
                 }
@@ -60,6 +73,10 @@ struct BooleanField: Field {
                     expectedType: FormData.boolean(false)
                 )
             }
+        }
+        .onChange(of: value) { _, newValue in
+            print("Boolean field changed to: \(newValue)")
+            formData.wrappedValue = .boolean(newValue)
         }
     }
 }
@@ -134,6 +151,7 @@ private struct SelectWidget: View {
             } label: {
                 EmptyView()
             }
+            .id(id)
             .pickerStyle(.segmented)
         }
     }
@@ -153,5 +171,6 @@ private struct CheckboxWidget: View {
             Text(label)
                 .font(.headline)
         }
+        .id(id)
     }
 }

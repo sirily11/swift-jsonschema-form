@@ -44,46 +44,41 @@ struct ObjectField: Field {
         }
     }
 
+    private func schemaBinding(name: String) -> Binding<FormData> {
+        if case .object(let properties) = formData.wrappedValue {
+            return Binding<FormData>(
+                get: {
+                    properties[name] ?? FormData.fromSchemaType(schema: schema)
+                },
+                set: { newValue in
+                    var updatedProperties = properties
+                    updatedProperties[name] = newValue
+                    formData.wrappedValue = FormData.object(properties: updatedProperties)
+                }
+            )
+        }
+        return formData
+    }
+
     // Render a property field
     @ViewBuilder
     private func propertyView(name: String, schema: JSONSchema) -> some View {
-        if case .object(let properties) = formData.wrappedValue {
+        if case .object = formData.wrappedValue {
             // Get property-specific uiSchema if it exists
             let propertyUiSchema = uiSchema?[name] as? [String: Any]
 
             // Check if property is required
             let isRequired = requiredProperties?.contains(name) ?? false
 
-            // Get property value from formData
-            let propertyValue = properties[name] ?? FormData.object(properties: [:])
-
             // Create a unique ID for this field
             let fieldId = "\(id)_\(name)"
-
-            // Property change handler
-            let handlePropertyChange: (Any?) -> Void = { newValue in
-                var updatedFormData = properties ?? [:]
-                if let newValue = newValue {
-                    // updatedFormData[name] = newValue
-                } else {
-                    updatedFormData.removeValue(forKey: name)
-                }
-                formData.wrappedValue = FormData.object(properties: updatedFormData)
-            }
 
             // Render the appropriate field based on schema type
             SchemaField(
                 schema: schema,
                 uiSchema: propertyUiSchema,
                 id: fieldId,
-                formData: Binding(
-                    get: { propertyValue },
-                    set: { newValue in
-                        var updatedProperties = properties ?? [:]
-                        updatedProperties[name] = newValue
-                        formData.wrappedValue = FormData.object(properties: updatedProperties)
-                    }
-                ),
+                formData: schemaBinding(name: name),
                 required: isRequired,
                 propertyName: name
             )

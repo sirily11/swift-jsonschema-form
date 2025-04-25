@@ -11,7 +11,6 @@ public enum FormData: Equatable, Describable {
     case string(String)
     case number(Double)
     case boolean(Bool)
-    case enumField([EnumValue])
     case null
 
     public static func == (lhs: FormData, rhs: FormData) -> Bool {
@@ -26,7 +25,6 @@ public enum FormData: Equatable, Describable {
             return lhsNumber == rhsNumber
         case (.boolean(let lhsBoolean), .boolean(let rhsBoolean)):
             return lhsBoolean == rhsBoolean
-
         default:
             return false
         }
@@ -34,23 +32,61 @@ public enum FormData: Equatable, Describable {
 
     func describe() -> String {
         switch self {
-        case .object(_):
+        case .object:
             return "FormData.object"
-        case .array(_):
+        case .array:
             return "FormData.array"
-        case .string(_):
+        case .string:
             return "FormData.string"
-        case .number(_):
+        case .number:
             return "FormData.number"
-        case .boolean(_):
+        case .boolean:
             return "FormData.boolean"
-        case .enumField(_):
-            return "FormData.enumField"
         case .null:
             return "FormData.null"
-
         }
+    }
 
+    public var object: [String: FormData]? {
+        if case .object(let properties) = self {
+            return properties
+        }
+        return nil
+    }
+
+    public var array: [FormData]? {
+        if case .array(let items) = self {
+            return items
+        }
+        return nil
+    }
+
+    public var string: String? {
+        if case .string(let value) = self {
+            return value
+        }
+        return nil
+    }
+
+    public var number: Double? {
+        if case .number(let value) = self {
+            return value
+        }
+        return nil
+    }
+
+    public var boolean: Bool? {
+        if case .boolean(let value) = self {
+            return value
+        }
+        return nil
+    }
+
+    public var null: Bool {
+        if case .null = self {
+            return true
+        }
+        return false
     }
 }
 
@@ -65,8 +101,8 @@ extension AnyCodable {
     }
 }
 
-extension FormData {
-    public static func fromSchemaType(schema: JSONSchema) -> FormData {
+public extension FormData {
+    static func fromSchemaType(schema: JSONSchema) -> FormData {
         switch schema.type {
         case .object:
             return .object(properties: [:])
@@ -75,11 +111,13 @@ extension FormData {
         case .string:
             return .string(schema.defaultValue?.toValue() ?? "")
         case .number:
-            return .number(schema.defaultValue?.toValue() ?? 0)
+            let doubleDefaultValue: Double? = schema.defaultValue?.toValue()
+            let intDefaultValue: Int? = schema.defaultValue?.toValue()
+            return .number(doubleDefaultValue ?? Double(intDefaultValue ?? 0))
         case .boolean:
             return .boolean(schema.defaultValue?.toValue() ?? false)
         case .enum:
-            return .enumField([])
+            return .null
         case .integer:
             return .number(0)
         case .null:
@@ -89,6 +127,23 @@ extension FormData {
         case .anyOf:
             return .null
         case .allOf:
+            return .null
+        }
+    }
+
+    static func fromValueType(value: Any) -> FormData {
+        switch value {
+        case let value as [String: FormData]:
+            return .object(properties: value)
+        case let value as [FormData]:
+            return .array(items: value)
+        case let value as String:
+            return .string(value)
+        case let value as Double:
+            return .number(value)
+        case let value as Bool:
+            return .boolean(value)
+        default:
             return .null
         }
     }

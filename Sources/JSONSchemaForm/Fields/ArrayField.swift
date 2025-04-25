@@ -83,6 +83,7 @@ struct ArrayField: Field {
                 )
             }
         }
+        .tag(propertyName ?? id)
         .onAppear {
             // Initialize item IDs if needed
             initializeItemIds()

@@ -7,6 +7,7 @@ struct EnumField: Field {
     var uiSchema: [String: Any]?
     var id: String
     var formData: Binding<FormData>
+    @State private var value: EnumValue = .emptyEnum
     var required: Bool
     var propertyName: String?
 
@@ -36,6 +37,22 @@ struct EnumField: Field {
             return createEnumValues(values: enumSchema.values)
         }
         return []
+    }
+
+    init(
+        schema: JSONSchema,
+        uiSchema: [String: Any]?,
+        id: String,
+        formData: Binding<FormData>,
+        required: Bool,
+        propertyName: String?
+    ) {
+        self.schema = schema
+        self.uiSchema = uiSchema
+        self.id = id
+        self.formData = formData
+        self.required = required
+        self.propertyName = propertyName
     }
 
     // Helper to convert JSONSchema.Value to EnumValue with custom labels
@@ -94,39 +111,6 @@ struct EnumField: Field {
         }
     }
 
-    // Function to find the selected index
-    private func selectedValue() -> Any? {
-        for value in enumValues {
-            if let formStr = formData as? String,
-                let valueStr = value.value as? String
-            {
-                if formStr == valueStr {
-                    return value.value
-                }
-            } else if let formBool = formData as? Bool,
-                let valueBool = value.value as? Bool
-            {
-                if formBool == valueBool {
-                    return value.value
-                }
-            } else if let formNum = formData as? Double,
-                let valueNum = value.value as? Double
-            {
-                if formNum == valueNum {
-                    return value.value
-                }
-            } else if let formInt = formData as? Int,
-                let valueInt = value.value as? Int
-            {
-                if formInt == valueInt {
-                    return value.value
-                }
-            }
-        }
-
-        return nil
-    }
-
     var body: some View {
         VStack(alignment: .leading) {
             switch widget {
@@ -134,12 +118,8 @@ struct EnumField: Field {
                 RadioWidget(
                     id: id,
                     label: fieldTitle,
-                    values: Binding(
-                        get: { enumValues },
-                        set: { newValue in
-                            formData.wrappedValue = FormData.enumField(newValue)
-                        }),
-                    selectedValue: selectedValue(),
+                    options: enumValues,
+                    selection: $value,
                     required: required,
                     isDisabled: isDisabled
                 )
@@ -150,16 +130,16 @@ struct EnumField: Field {
                     propertyName: propertyName,
                     schema: schema,
                     label: fieldTitle,
-                    values: Binding(
-                        get: { enumValues },
-                        set: { newValue in
-                            formData.wrappedValue = FormData.enumField(newValue)
-                        }),
-                    selectedValue: selectedValue(),
+                    options: enumValues,
+                    selection: $value,
                     required: required,
                     isDisabled: isDisabled
                 )
             }
+        }
+        .id("\(id)_enum_field")
+        .onChange(of: value) { _, newValue in
+            self.formData.wrappedValue = .fromValueType(value: newValue.value)
         }
     }
 }
@@ -172,54 +152,25 @@ private struct PickerWidget: Field {
     var propertyName: String?
     var schema: JSONSchema
     var label: String
-    var values: Binding<[EnumValue]>
-    var selectedValue: Any?
+    var options: [EnumValue]
+    var selection: Binding<EnumValue>
     var required: Bool
     var isDisabled: (Any) -> Bool
 
-    @State private var selectedOption: EnumValue?
-
     var body: some View {
-        if values.isEmpty {
+        if options.isEmpty {
             Text("No options available")
                 .foregroundColor(.gray)
                 .italic()
         } else {
             VStack(alignment: .leading) {
                 Picker(
-                    selection: Binding<EnumValue>(
-                        get: {
-                            if let option = selectedOption {
-                                // Ensure the selected option exists in values array
-                                if values.contains(where: { $0.id == option.id }) {
-                                    return option
-                                }
-                            }
-
-                            // Find the option that matches the selected value
-                            if let selectedValue = selectedValue {
-                                for value in values.wrappedValue {
-                                    if compareValues(selectedValue, value.value) {
-                                        return value
-                                    }
-                                }
-                            }
-
-                            // Default to first option if there's no match
-                            return values.wrappedValue.first
-                                ?? EnumValue(value: "", displayName: "")
-                        },
-                        set: { newValue in
-                            if values.contains(where: { $0.id == newValue.id }) {
-                                selectedOption = newValue
-                                values.wrappedValue = values.wrappedValue.map {
-                                    $0.id == newValue.id ? newValue : $0
-                                }
-                            }
-                        }
-                    )
+                    selection: selection
                 ) {
-                    ForEach(values.wrappedValue) { option in
+                    Text("")
+                        .tag(EnumValue.emptyEnum)
+
+                    ForEach(options) { option in
                         Text(option.displayName)
                             .tag(option)
                             .disabled(isDisabled(option.value))
@@ -229,44 +180,15 @@ private struct PickerWidget: Field {
                 }
                 .pickerStyle(.menu)
             }
-            .onAppear {
-                // Initialize selectedOption based on formData
-                if let selectedValue = selectedValue {
-                    for value in values.wrappedValue {
-                        if compareValues(selectedValue, value.value) {
-                            selectedOption = value
-                            break
-                        }
-                    }
-                }
-            }
         }
-    }
-
-    // Helper function to compare values of Any type
-    private func compareValues(_ value1: Any?, _ value2: Any?) -> Bool {
-        guard let value1 = value1, let value2 = value2 else {
-            return value1 == nil && value2 == nil
-        }
-
-        if let str1 = value1 as? String, let str2 = value2 as? String {
-            return str1 == str2
-        } else if let bool1 = value1 as? Bool, let bool2 = value2 as? Bool {
-            return bool1 == bool2
-        } else if let num1 = value1 as? Double, let num2 = value2 as? Double {
-            return num1 == num2
-        } else if let int1 = value1 as? Int, let int2 = value2 as? Int {
-            return int1 == int2
-        }
-        return false
     }
 }
 
 private struct RadioWidget: View {
     var id: String
     var label: String
-    var values: Binding<[EnumValue]>
-    var selectedValue: Any?
+    var options: [EnumValue]
+    var selection: Binding<EnumValue>
     var required: Bool
     var isDisabled: (Any) -> Bool
 
@@ -278,16 +200,14 @@ private struct RadioWidget: View {
                     .padding(.bottom, 4)
             }
 
-            if values.isEmpty {
+            if options.isEmpty {
                 Text("No options available")
                     .foregroundColor(.gray)
                     .italic()
             } else {
-                ForEach(values.wrappedValue) { option in
+                ForEach(options) { option in
                     Button {
-                        values.wrappedValue = values.wrappedValue.map {
-                            $0.id == option.id ? option : $0
-                        }
+                        selection.wrappedValue = option
                     } label: {
                         HStack {
                             Image(systemName: isSelected(option.value) ? "circle.fill" : "circle")
@@ -305,10 +225,7 @@ private struct RadioWidget: View {
 
     // Helper function to check if a value is selected
     private func isSelected(_ value: Any) -> Bool {
-        guard let selectedValue = selectedValue else {
-            return false
-        }
-
+        let selectedValue = selection.wrappedValue
         if let selectedStr = selectedValue as? String,
             let valueStr = value as? String
         {
@@ -326,6 +243,7 @@ private struct RadioWidget: View {
         {
             return selectedInt == valueInt
         }
+
         return false
     }
 }

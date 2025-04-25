@@ -113,7 +113,7 @@ public struct JSONSchemaForm: View {
                 schema: schema,
                 uiSchema: uiSchema,
                 formData: formData,
-                edit: formData != nil,
+                edit: formData.wrappedValue != nil,
                 errors: initialErrors,
                 errorSchema: initialErrorSchema
             ))
