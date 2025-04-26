@@ -1,13 +1,31 @@
 {
-  "originHash" : "4ba4d9dd883318d3e137966d205ae44a98df55a521d7e2e1f41326c88768b0e4",
+  "originHash" : "206c036f8cbb82813e5877fc66de20e150756f8c6586b968dc0ef31bb5ee9387",
   "pins" : [
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections",
+      "state" : {
+        "revision" : "671108c96644956dddcd89dd59c203dcdb36cec7",
+        "version" : "1.1.4"
+      }
+    },
     {
       "identity" : "swift-json-schema",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kevinhermawan/swift-json-schema.git",
+      "location" : "https://github.com/sirily11/swift-json-schema",
       "state" : {
-        "revision" : "4a9284e44d8ef2bfc863734e9ff535909ae6b27a",
-        "version" : "2.0.1"
+        "revision" : "663afab8c131151950fd7fb114871c02a529a4b4",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "viewinspector",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nalexn/ViewInspector",
+      "state" : {
+        "revision" : "788e7879d38a839c4e348ab0762dcc0364e646a2",
+        "version" : "0.10.1"
       }
     }
   ],
