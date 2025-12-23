@@ -146,24 +146,21 @@ public struct JSONSchemaForm: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        Group {
             if showErrorList && !state.errors.isEmpty {
                 errorList
             }
+            SchemaField(
+                schema: schema,
+                uiSchema: uiSchema,
+                id: idPrefix,
+                formData: formData,
+                required: false,
+                conditionalSchemas: conditionalSchemas
+            )
 
-            Form {
-                SchemaField(
-                    schema: schema,
-                    uiSchema: uiSchema,
-                    id: idPrefix,
-                    formData: formData,
-                    required: false,
-                    conditionalSchemas: conditionalSchemas
-                )
-
-                if showSubmitButton {
-                    submitButton
-                }
+            if showSubmitButton {
+                submitButton
             }
         }
     }
@@ -302,13 +299,15 @@ public struct JSONSchemaForm: View {
                     }
                     """
             ) {
-                JSONSchemaForm(
-                    schema: schema,
-                    formData: $formData,
-                    onSubmit: { data in
-                        print("Submitted: \(String(describing: data))")
-                    }
-                )
+                Form {
+                    JSONSchemaForm(
+                        schema: schema,
+                        formData: $formData,
+                        onSubmit: { data in
+                            print("Submitted: \(String(describing: data))")
+                        }
+                    )
+                }
                 .formStyle(.grouped)
             } else {
                 Text("Failed to parse schema")
