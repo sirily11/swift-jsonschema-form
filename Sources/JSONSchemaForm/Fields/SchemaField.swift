@@ -75,48 +75,75 @@ struct SchemaField: Field {
     private func renderFieldBasedOnSchemaType() -> some View {
         switch schema.type {
         case .string:
-            StringField(
-                schema: schema,
-                uiSchema: uiSchema,
+            FieldTemplate(
                 id: id,
-                formData: schemaDataBinding(schemaType: schema.type),
-                required: required,
-                propertyName: propertyName
-            )
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                StringField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName
+                )
+            }
 
         case .number:
-            NumberField(
-                schema: schema,
-                uiSchema: uiSchema,
+            FieldTemplate(
                 id: id,
-                formData: schemaDataBinding(schemaType: schema.type),
-                required: required,
-                propertyName: propertyName
-            )
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                NumberField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName
+                )
+            }
 
         case .integer:
-            // Integer fields use the same NumberField but with integer values
-            NumberField(
-                schema: schema,
-                uiSchema: uiSchema,
+            FieldTemplate(
                 id: id,
-                formData: schemaDataBinding(schemaType: schema.type),
-                required: required,
-                propertyName: propertyName
-            )
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                NumberField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName
+                )
+            }
 
         case .boolean:
-            BooleanField(
-                schema: schema,
-                uiSchema: uiSchema,
+            FieldTemplate(
                 id: id,
-                formData: schemaDataBinding(schemaType: schema.type),
-                required: required,
-                propertyName: propertyName
-            )
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                BooleanField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName
+                )
+            }
 
         case .object:
-            // Check if this object schema also has allOf (common pattern for conditionals)
+            // Object fields have their own template (ObjectFieldTemplate)
             if schema.combinedSchema?.allOf != nil || conditionalSchemas?.isEmpty == false {
                 AllOfField(
                     schema: schema,
@@ -139,6 +166,7 @@ struct SchemaField: Field {
             }
 
         case .array:
+            // Array fields have their own template (ArrayFieldTemplate)
             ArrayField(
                 schema: schema,
                 uiSchema: uiSchema,
@@ -149,24 +177,36 @@ struct SchemaField: Field {
             )
 
         case .null:
-            // NullField would be a simple placeholder
-            Text("null")
-                .foregroundColor(.gray)
-                .italic()
+            FieldTemplate(
+                id: id,
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                Text("null")
+                    .foregroundColor(.gray)
+                    .italic()
+            }
 
         case .enum:
-            // EnumField would render a selection of possible values
-            EnumField(
-                schema: schema,
-                uiSchema: uiSchema,
+            FieldTemplate(
                 id: id,
-                formData: schemaDataBinding(schemaType: schema.type),
-                required: required,
-                propertyName: propertyName
-            )
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                EnumField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName
+                )
+            }
 
         case .oneOf:
-            // OneOfField renders a picker to select between mutually exclusive schemas
+            // OneOf fields have their own complex layout
             OneOfField(
                 schema: schema,
                 uiSchema: uiSchema,
@@ -177,8 +217,7 @@ struct SchemaField: Field {
             )
 
         case .anyOf:
-            // AnyOfField is similar to OneOfField but allows multiple schemas to validate
-            // For now, use OneOfField as a reasonable approximation
+            // AnyOf fields use OneOfField with their own layout
             OneOfField(
                 schema: schema,
                 uiSchema: uiSchema,
@@ -189,7 +228,7 @@ struct SchemaField: Field {
             )
 
         case .allOf:
-            // AllOfField merges all sub-schemas and renders combined fields
+            // AllOf fields have their own complex layout
             AllOfField(
                 schema: schema,
                 uiSchema: uiSchema,
@@ -201,10 +240,16 @@ struct SchemaField: Field {
             )
 
         default:
-            // Fallback for unsupported schema types
-            UnsupportedField(
-                reason: "Unsupported schema type"
-            )
+            FieldTemplate(
+                id: id,
+                label: fieldTitle,
+                description: schema.description,
+                required: required
+            ) {
+                UnsupportedField(
+                    reason: "Unsupported schema type"
+                )
+            }
         }
     }
 }

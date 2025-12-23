@@ -33,7 +33,7 @@ class JSONSchemaFormDefaultWithRefsTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify scalar field shows default value "scalar default"
-        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").textField()
+        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").find(ViewType.TextField.self)
         XCTAssertEqual(try scalarField.input(), "scalar default", "Scalar field should show schema default")
     }
 
@@ -52,7 +52,7 @@ class JSONSchemaFormDefaultWithRefsTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested object field shows default value "nested object default"
-        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").textField()
+        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").find(ViewType.TextField.self)
         XCTAssertEqual(try nestedField.input(), "nested object default", "Nested object field should show schema default")
     }
 
@@ -73,7 +73,7 @@ class JSONSchemaFormDefaultWithRefsTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify scalar field shows provided value, not default
-        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").textField()
+        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").find(ViewType.TextField.self)
         XCTAssertEqual(try scalarField.input(), "custom value", "Provided value should override default")
     }
 
@@ -93,11 +93,11 @@ class JSONSchemaFormDefaultWithRefsTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify provided value is used
-        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").textField()
+        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").find(ViewType.TextField.self)
         XCTAssertEqual(try scalarField.input(), "provided scalar", "Provided scalar should be used")
 
         // Verify nested default is used
-        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").textField()
+        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").find(ViewType.TextField.self)
         XCTAssertEqual(try nestedField.input(), "nested object default", "Nested field should use default")
     }
 
@@ -120,7 +120,7 @@ class JSONSchemaFormDefaultWithRefsTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify custom nested value is used
-        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").textField()
+        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").find(ViewType.TextField.self)
         XCTAssertEqual(try nestedField.input(), "custom nested value", "Custom nested value should be used")
     }
 
@@ -138,10 +138,10 @@ class JSONSchemaFormDefaultWithRefsTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify both get scalar defaults
-        let valuesScalar = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").textField()
+        let valuesScalar = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").find(ViewType.TextField.self)
         XCTAssertEqual(try valuesScalar.input(), "scalar default", "valuesInFormData.scalar should have default")
 
-        let noValuesScalar = try form.inspect().find(viewWithId: "root_noValuesInFormData_scalar").textField()
+        let noValuesScalar = try form.inspect().find(viewWithId: "root_noValuesInFormData_scalar").find(ViewType.TextField.self)
         XCTAssertEqual(try noValuesScalar.input(), "scalar default", "noValuesInFormData.scalar should have default")
     }
 

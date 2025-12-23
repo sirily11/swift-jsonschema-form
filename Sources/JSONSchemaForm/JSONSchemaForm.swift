@@ -276,7 +276,8 @@ public struct JSONSchemaForm: View {
                         "properties": {
                             "firstName": {
                                 "type": "string",
-                                "title": "First Name"
+                                "title": "First Name",
+                                "description": "Enter your first name"
                             },
                             "lastName": {
                                 "type": "string",
@@ -293,7 +294,8 @@ public struct JSONSchemaForm: View {
                             },
                             "subscribe": {
                                 "type": "boolean",
-                                "title": "Subscribe to newsletter"
+                                "title": "Subscribe to newsletter",
+                                "description": "Receive updates and offers via email"
                             }
                         },
                         "required": ["firstName", "lastName", "email"]

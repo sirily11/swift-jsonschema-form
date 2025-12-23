@@ -43,15 +43,15 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify firstName field
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "Chuck")
 
         // Verify lastName field
-        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").textField()
+        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").find(ViewType.TextField.self)
         XCTAssertEqual(try lastNameField.input(), "Norris")
 
         // Verify age field
-        let ageField = try form.inspect().find(viewWithId: "root_age").textField()
+        let ageField = try form.inspect().find(viewWithId: "root_age").find(ViewType.TextField.self)
         XCTAssertEqual(try ageField.input(), "80")
     }
 
@@ -90,7 +90,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify title field
-        let titleField = try form.inspect().find(viewWithId: "root_title").textField()
+        let titleField = try form.inspect().find(viewWithId: "root_title").find(ViewType.TextField.self)
         XCTAssertEqual(try titleField.input(), "My Tasks")
     }
 
@@ -106,11 +106,11 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify number field
-        let numberField = try form.inspect().find(viewWithId: "root_number").textField()
+        let numberField = try form.inspect().find(viewWithId: "root_number").find(ViewType.TextField.self)
         XCTAssertEqual(try numberField.input(), "3")
 
         // Verify integer field
-        let integerField = try form.inspect().find(viewWithId: "root_integer").textField()
+        let integerField = try form.inspect().find(viewWithId: "root_integer").find(ViewType.TextField.self)
         XCTAssertEqual(try integerField.input(), "42")
     }
 
@@ -126,7 +126,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify firstName field
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "Chuck")
 
         // Null field should be rendered (as informational text)
@@ -193,7 +193,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         XCTAssertNotNil(picker, "OneOf picker should be rendered")
 
         // Verify lorem field is rendered (first option's field)
-        let loremField = try form.inspect().find(viewWithId: "root_lorem").textField()
+        let loremField = try form.inspect().find(viewWithId: "root_lorem").find(ViewType.TextField.self)
         XCTAssertEqual(try loremField.input(), "hello world", "Lorem field should display the value")
     }
 
@@ -283,11 +283,11 @@ class JSONSchemaFormSchemaTests: XCTestCase {
 
         // Verify both merged fields are rendered
         // Lorem should be rendered as a toggle (boolean type from second allOf schema)
-        let loremToggle = try form.inspect().find(viewWithId: "root_lorem").toggle()
+        let loremToggle = try form.inspect().find(viewWithId: "root_lorem").find(ViewType.Toggle.self)
         XCTAssertTrue(try loremToggle.isOn(), "Lorem toggle should be on")
 
         // Ipsum should be rendered as a text field
-        let ipsumField = try form.inspect().find(viewWithId: "root_ipsum").textField()
+        let ipsumField = try form.inspect().find(viewWithId: "root_ipsum").find(ViewType.TextField.self)
         XCTAssertEqual(try ipsumField.input(), "test value", "Ipsum field should display the value")
     }
 
@@ -304,10 +304,10 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify array items render - find first item's text field
-        let item0Field = try form.inspect().find(viewWithId: "root_listOfStrings_0").textField()
+        let item0Field = try form.inspect().find(viewWithId: "root_listOfStrings_0").find(ViewType.TextField.self)
         XCTAssertEqual(try item0Field.input(), "item1")
 
-        let item1Field = try form.inspect().find(viewWithId: "root_listOfStrings_1").textField()
+        let item1Field = try form.inspect().find(viewWithId: "root_listOfStrings_1").find(ViewType.TextField.self)
         XCTAssertEqual(try item1Field.input(), "item2")
     }
 
@@ -326,13 +326,13 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested fields from resolved $ref
-        let streetField = try form.inspect().find(viewWithId: "root_billing_address_street_address").textField()
+        let streetField = try form.inspect().find(viewWithId: "root_billing_address_street_address").find(ViewType.TextField.self)
         XCTAssertEqual(try streetField.input(), "123 Main St")
 
-        let cityField = try form.inspect().find(viewWithId: "root_billing_address_city").textField()
+        let cityField = try form.inspect().find(viewWithId: "root_billing_address_city").find(ViewType.TextField.self)
         XCTAssertEqual(try cityField.input(), "New York")
 
-        let stateField = try form.inspect().find(viewWithId: "root_billing_address_state").textField()
+        let stateField = try form.inspect().find(viewWithId: "root_billing_address_state").find(ViewType.TextField.self)
         XCTAssertEqual(try stateField.input(), "NY")
     }
 
@@ -378,11 +378,11 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested scalar field is rendered with provided value
-        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").textField()
+        let scalarField = try form.inspect().find(viewWithId: "root_valuesInFormData_scalar").find(ViewType.TextField.self)
         XCTAssertEqual(try scalarField.input(), "custom value")
 
         // Verify nested object field is rendered
-        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").textField()
+        let nestedField = try form.inspect().find(viewWithId: "root_valuesInFormData_object_nested").find(ViewType.TextField.self)
         XCTAssertEqual(try nestedField.input(), "nested value")
     }
 
@@ -429,7 +429,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
 
         // Verify the num field is rendered with correct ID
         // The allOf field should render a number input for primitive integer type
-        let numField = try form.inspect().find(viewWithId: "root_num").textField()
+        let numField = try form.inspect().find(viewWithId: "root_num").find(ViewType.TextField.self)
         XCTAssertEqual(try numField.input(), "42", "Number field should display value 42")
     }
 
@@ -444,7 +444,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let data = Binding(wrappedValue: formData)
         let form = JSONSchemaForm(schema: schema, formData: data)
 
-        let numField = try form.inspect().find(viewWithId: "root_num").textField()
+        let numField = try form.inspect().find(viewWithId: "root_num").find(ViewType.TextField.self)
         XCTAssertEqual(try numField.input(), "0", "Number field should display value 0")
     }
 
@@ -549,19 +549,19 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify firstName field (regular string)
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "Chuck")
 
         // Verify lastName field (regular string)
-        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").textField()
+        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").find(ViewType.TextField.self)
         XCTAssertEqual(try lastNameField.input(), "Norris")
 
         // Verify age field (nullable integer - preprocessor converts ["integer", "null"] to "integer")
-        let ageField = try form.inspect().find(viewWithId: "root_age").textField()
+        let ageField = try form.inspect().find(viewWithId: "root_age").find(ViewType.TextField.self)
         XCTAssertEqual(try ageField.input(), "80")
 
         // Verify bio field (nullable string - preprocessor converts ["string", "null"] to "string")
-        let bioField = try form.inspect().find(viewWithId: "root_bio").textField()
+        let bioField = try form.inspect().find(viewWithId: "root_bio").find(ViewType.TextField.self)
         XCTAssertEqual(try bioField.input(), "A legendary martial artist")
     }
 
@@ -579,7 +579,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify defined properties
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "John")
     }
 
@@ -595,7 +595,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify defined properties
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "John")
     }
 
@@ -614,7 +614,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested name field in unidirectional object
-        let nameField = try form.inspect().find(viewWithId: "root_unidirectional_name").textField()
+        let nameField = try form.inspect().find(viewWithId: "root_unidirectional_name").find(ViewType.TextField.self)
         XCTAssertEqual(try nameField.input(), "John")
     }
 
@@ -631,7 +631,7 @@ class JSONSchemaFormSchemaTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested name field in simple object
-        let nameField = try form.inspect().find(viewWithId: "root_simple_name").textField()
+        let nameField = try form.inspect().find(viewWithId: "root_simple_name").find(ViewType.TextField.self)
         XCTAssertEqual(try nameField.input(), "John")
     }
 
