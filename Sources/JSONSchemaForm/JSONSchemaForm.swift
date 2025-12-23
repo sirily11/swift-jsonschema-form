@@ -35,6 +35,10 @@ public struct JSONSchemaForm: View {
 
     /// Initial form data
     var formData: Binding<FormData>
+
+    /// Conditional schemas for if/then/else support (extracted during preprocessing)
+    var conditionalSchemas: [ConditionalSchema]?
+
     /// Callback when form is submitted
     var onSubmit: ((Any?) -> Void)?
 
@@ -79,6 +83,7 @@ public struct JSONSchemaForm: View {
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
         formData: Binding<FormData>,
+        conditionalSchemas: [ConditionalSchema]? = nil,
         onSubmit: ((Any?) -> Void)? = nil,
         onError: (([ValidationError]) -> Void)? = nil,
         formContext: [String: Any]? = nil,
@@ -95,6 +100,7 @@ public struct JSONSchemaForm: View {
         self.schema = schema
         self.uiSchema = uiSchema
         self.formData = formData
+        self.conditionalSchemas = conditionalSchemas
         self.onSubmit = onSubmit
         self.onError = onError
         self.formContext = formContext
@@ -151,7 +157,8 @@ public struct JSONSchemaForm: View {
                     uiSchema: uiSchema,
                     id: idPrefix,
                     formData: formData,
-                    required: false
+                    required: false,
+                    conditionalSchemas: conditionalSchemas
                 )
 
                 if showSubmitButton {

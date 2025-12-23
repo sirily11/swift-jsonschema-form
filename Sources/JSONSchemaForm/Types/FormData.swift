@@ -102,6 +102,30 @@ extension AnyCodable {
 }
 
 public extension FormData {
+    /// Convert FormData to a dictionary representation for validation
+    func toDictionary() -> Any? {
+        switch self {
+        case .object(let properties):
+            var dict: [String: Any] = [:]
+            for (key, value) in properties {
+                if let converted = value.toDictionary() {
+                    dict[key] = converted
+                }
+            }
+            return dict
+        case .array(let items):
+            return items.compactMap { $0.toDictionary() }
+        case .string(let value):
+            return value
+        case .number(let value):
+            return value
+        case .boolean(let value):
+            return value
+        case .null:
+            return nil
+        }
+    }
+
     static func fromSchemaType(schema: JSONSchema) -> FormData {
         switch schema.type {
         case .object:
@@ -123,11 +147,21 @@ public extension FormData {
         case .null:
             return .null
         case .oneOf:
-            return .null
+            // For oneOf, use the first option's schema type if available
+            if let firstOption = schema.combinedSchema?.oneOf?.first {
+                return fromSchemaType(schema: firstOption)
+            }
+            return .object(properties: [:])
         case .anyOf:
-            return .null
+            // For anyOf, use the first option's schema type if available
+            if let firstOption = schema.combinedSchema?.anyOf?.first {
+                return fromSchemaType(schema: firstOption)
+            }
+            return .object(properties: [:])
         case .allOf:
-            return .null
+            // For allOf, all schemas must validate so we return empty object
+            // The AllOfField will handle merging and populating properties
+            return .object(properties: [:])
         }
     }
 
