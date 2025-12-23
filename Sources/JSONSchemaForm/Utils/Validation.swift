@@ -36,7 +36,76 @@ func validateFormData(
         
     case .array:
         validateArray(value: formData, context: schema.arraySchema!, errors: &errors, errorSchema: &errorSchema)
-        
+
+    case .allOf:
+        // For allOf, validate against ALL sub-schemas
+        if let allOfSchemas = schema.combinedSchema?.allOf {
+            for subSchema in allOfSchemas {
+                let subResult = validateFormData(
+                    formData: formData,
+                    schema: subSchema,
+                    customValidate: nil
+                )
+                errors.append(contentsOf: subResult.errors)
+            }
+        }
+
+    case .oneOf:
+        // For oneOf, at least one sub-schema must validate
+        if let oneOfSchemas = schema.combinedSchema?.oneOf {
+            var allErrors: [[ValidationError]] = []
+            var hasValidOption = false
+
+            for subSchema in oneOfSchemas {
+                let subResult = validateFormData(
+                    formData: formData,
+                    schema: subSchema,
+                    customValidate: nil
+                )
+                if subResult.errors.isEmpty {
+                    hasValidOption = true
+                    break
+                }
+                allErrors.append(subResult.errors)
+            }
+
+            if !hasValidOption && !oneOfSchemas.isEmpty {
+                addError(
+                    name: "oneOf",
+                    message: "should match exactly one schema in oneOf",
+                    errors: &errors,
+                    errorSchema: &errorSchema
+                )
+            }
+        }
+
+    case .anyOf:
+        // For anyOf, at least one sub-schema must validate
+        if let anyOfSchemas = schema.combinedSchema?.anyOf {
+            var hasValidOption = false
+
+            for subSchema in anyOfSchemas {
+                let subResult = validateFormData(
+                    formData: formData,
+                    schema: subSchema,
+                    customValidate: nil
+                )
+                if subResult.errors.isEmpty {
+                    hasValidOption = true
+                    break
+                }
+            }
+
+            if !hasValidOption && !anyOfSchemas.isEmpty {
+                addError(
+                    name: "anyOf",
+                    message: "should match at least one schema in anyOf",
+                    errors: &errors,
+                    errorSchema: &errorSchema
+                )
+            }
+        }
+
     default:
         // For unsupported schemas - we might report an error in a complex implementation
         break
@@ -155,16 +224,9 @@ private func validateNumber(
         return
     }
     
-    // Check minimum
+    // Check minimum (inclusive)
     if let minimum = context.minimum {
-        if let exclusiveMinimum = context.exclusiveMinimum, numValue <= minimum {
-            addError(
-                name: "exclusiveMinimum",
-                message: "should be > \(minimum)",
-                errors: &errors,
-                errorSchema: &errorSchema
-            )
-        } else if context.exclusiveMinimum != nil && numValue < minimum {
+        if numValue < minimum {
             addError(
                 name: "minimum",
                 message: "should be >= \(minimum)",
@@ -173,20 +235,37 @@ private func validateNumber(
             )
         }
     }
-    
-    // Check maximum
-    if let maximum = context.maximum {
-        if let exclusiveMaximum = context.exclusiveMaximum, numValue >= maximum {
+
+    // Check exclusiveMinimum (JSON Schema draft 6+: exclusiveMinimum is a number)
+    if let exclusiveMinimum = context.exclusiveMinimum {
+        if numValue <= exclusiveMinimum {
             addError(
-                name: "exclusiveMaximum",
-                message: "should be < \(maximum)",
+                name: "exclusiveMinimum",
+                message: "should be > \(exclusiveMinimum)",
                 errors: &errors,
                 errorSchema: &errorSchema
             )
-        } else if context.exclusiveMaximum != nil && numValue > maximum {
+        }
+    }
+
+    // Check maximum (inclusive)
+    if let maximum = context.maximum {
+        if numValue > maximum {
             addError(
                 name: "maximum",
                 message: "should be <= \(maximum)",
+                errors: &errors,
+                errorSchema: &errorSchema
+            )
+        }
+    }
+
+    // Check exclusiveMaximum (JSON Schema draft 6+: exclusiveMaximum is a number)
+    if let exclusiveMaximum = context.exclusiveMaximum {
+        if numValue >= exclusiveMaximum {
+            addError(
+                name: "exclusiveMaximum",
+                message: "should be < \(exclusiveMaximum)",
                 errors: &errors,
                 errorSchema: &errorSchema
             )
@@ -236,16 +315,9 @@ private func validateInteger(
         return
     }
     
-    // Check minimum
+    // Check minimum (inclusive)
     if let minimum = context.minimum {
-        if let exclusiveMinimum = context.exclusiveMinimum, intValue <= minimum {
-            addError(
-                name: "exclusiveMinimum",
-                message: "should be > \(minimum)",
-                errors: &errors,
-                errorSchema: &errorSchema
-            )
-        } else if context.exclusiveMinimum != nil && intValue < minimum {
+        if intValue < minimum {
             addError(
                 name: "minimum",
                 message: "should be >= \(minimum)",
@@ -254,17 +326,22 @@ private func validateInteger(
             )
         }
     }
-    
-    // Check maximum
-    if let maximum = context.maximum {
-        if let exclusiveMaximum = context.exclusiveMaximum, intValue >= maximum {
+
+    // Check exclusiveMinimum (JSON Schema draft 6+: exclusiveMinimum is a number)
+    if let exclusiveMinimum = context.exclusiveMinimum {
+        if intValue <= exclusiveMinimum {
             addError(
-                name: "exclusiveMaximum",
-                message: "should be < \(maximum)",
+                name: "exclusiveMinimum",
+                message: "should be > \(exclusiveMinimum)",
                 errors: &errors,
                 errorSchema: &errorSchema
             )
-        } else if context.exclusiveMaximum != nil && intValue > maximum {
+        }
+    }
+
+    // Check maximum (inclusive)
+    if let maximum = context.maximum {
+        if intValue > maximum {
             addError(
                 name: "maximum",
                 message: "should be <= \(maximum)",
@@ -273,7 +350,19 @@ private func validateInteger(
             )
         }
     }
-    
+
+    // Check exclusiveMaximum (JSON Schema draft 6+: exclusiveMaximum is a number)
+    if let exclusiveMaximum = context.exclusiveMaximum {
+        if intValue >= exclusiveMaximum {
+            addError(
+                name: "exclusiveMaximum",
+                message: "should be < \(exclusiveMaximum)",
+                errors: &errors,
+                errorSchema: &errorSchema
+            )
+        }
+    }
+
     // Check multipleOf
     if let multipleOf = context.multipleOf {
         if intValue % multipleOf != 0 {
@@ -323,7 +412,7 @@ private func validateObject(
         }
         return
     }
-    
+
     // Check required properties
     if let required = context.required {
         for prop in required {
@@ -338,7 +427,7 @@ private func validateObject(
             }
         }
     }
-    
+
     // Check property dependencies
     if let dependencies = context.dependencies as? [String: [String]] {
         for (dependency, dependentProps) in dependencies {
@@ -356,8 +445,20 @@ private func validateObject(
             }
         }
     }
-    
-    // Note: propertyNames, additionalProperties, etc. are not implemented in this example
+
+    // Recursively validate properties against their schemas
+    if let properties = context.properties {
+        for (propName, propSchema) in properties {
+            if let propValue = objectValue[propName] {
+                let propResult = validateFormData(
+                    formData: propValue,
+                    schema: propSchema,
+                    customValidate: nil
+                )
+                errors.append(contentsOf: propResult.errors)
+            }
+        }
+    }
 }
 
 /// Validates an array value against schema constraints

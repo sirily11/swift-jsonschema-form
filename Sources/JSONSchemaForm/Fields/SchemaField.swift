@@ -11,6 +11,9 @@ struct SchemaField: Field {
     var required: Bool
     var propertyName: String?
 
+    /// Conditional schemas for if/then/else support (passed to AllOfField)
+    var conditionalSchemas: [ConditionalSchema]?
+
     // Extract the field widget from uiSchema if present
     private var uiField: String? {
         return uiSchema?["ui:field"] as? String
@@ -18,7 +21,7 @@ struct SchemaField: Field {
 
     init(
         schema: JSONSchema, uiSchema: [String: Any]?, id: String, formData: Binding<FormData>,
-        required: Bool, propertyName: String? = nil
+        required: Bool, propertyName: String? = nil, conditionalSchemas: [ConditionalSchema]? = nil
     ) {
         self.schema = schema
         self.uiSchema = uiSchema
@@ -26,6 +29,7 @@ struct SchemaField: Field {
         self.formData = formData
         self.required = required
         self.propertyName = propertyName
+        self.conditionalSchemas = conditionalSchemas
     }
 
     /// Returns a binding for schema data that correctly updates the parent form data
@@ -112,14 +116,27 @@ struct SchemaField: Field {
             )
 
         case .object:
-            ObjectField(
-                schema: schema,
-                uiSchema: uiSchema,
-                id: id,
-                formData: schemaDataBinding(schemaType: schema.type),
-                required: required,
-                propertyName: propertyName
-            )
+            // Check if this object schema also has allOf (common pattern for conditionals)
+            if schema.combinedSchema?.allOf != nil || conditionalSchemas?.isEmpty == false {
+                AllOfField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName,
+                    conditionalSchemas: conditionalSchemas
+                )
+            } else {
+                ObjectField(
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    id: id,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required,
+                    propertyName: propertyName
+                )
+            }
 
         case .array:
             ArrayField(
@@ -148,17 +165,40 @@ struct SchemaField: Field {
                 propertyName: propertyName
             )
 
-        //        case .anyOf:
-        //            // In a complete implementation, this would render a selection
-        //            // of possible schemas
-        //            Text("anyOf field (not fully implemented)")
-        //                .foregroundColor(.orange)
+        case .oneOf:
+            // OneOfField renders a picker to select between mutually exclusive schemas
+            OneOfField(
+                schema: schema,
+                uiSchema: uiSchema,
+                id: id,
+                formData: schemaDataBinding(schemaType: schema.type),
+                required: required,
+                propertyName: propertyName
+            )
 
-        //        case .oneOf:
-        //            // In a complete implementation, this would render a selection
-        //            // of possible schemas
-        //            Text("oneOf field (not fully implemented)")
-        //                .foregroundColor(.orange)
+        case .anyOf:
+            // AnyOfField is similar to OneOfField but allows multiple schemas to validate
+            // For now, use OneOfField as a reasonable approximation
+            OneOfField(
+                schema: schema,
+                uiSchema: uiSchema,
+                id: id,
+                formData: schemaDataBinding(schemaType: schema.type),
+                required: required,
+                propertyName: propertyName
+            )
+
+        case .allOf:
+            // AllOfField merges all sub-schemas and renders combined fields
+            AllOfField(
+                schema: schema,
+                uiSchema: uiSchema,
+                id: id,
+                formData: schemaDataBinding(schemaType: schema.type),
+                required: required,
+                propertyName: propertyName,
+                conditionalSchemas: conditionalSchemas
+            )
 
         default:
             // Fallback for unsupported schema types

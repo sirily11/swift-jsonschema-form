@@ -35,6 +35,10 @@ public struct JSONSchemaForm: View {
 
     /// Initial form data
     var formData: Binding<FormData>
+
+    /// Conditional schemas for if/then/else support (extracted during preprocessing)
+    var conditionalSchemas: [ConditionalSchema]?
+
     /// Callback when form is submitted
     var onSubmit: ((Any?) -> Void)?
 
@@ -49,6 +53,9 @@ public struct JSONSchemaForm: View {
 
     /// Whether to show the error list
     var showErrorList: Bool = true
+
+    /// Whether to show the submit button
+    var showSubmitButton: Bool = true
 
     /// Custom error transformer
     var transformErrors: (([ValidationError]) -> [ValidationError])?
@@ -76,11 +83,13 @@ public struct JSONSchemaForm: View {
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
         formData: Binding<FormData>,
+        conditionalSchemas: [ConditionalSchema]? = nil,
         onSubmit: ((Any?) -> Void)? = nil,
         onError: (([ValidationError]) -> Void)? = nil,
         formContext: [String: Any]? = nil,
         liveValidate: Bool = false,
         showErrorList: Bool = true,
+        showSubmitButton: Bool = true,
         transformErrors: (([ValidationError]) -> [ValidationError])? = nil,
         disabled: Bool = false,
         readonly: Bool = false,
@@ -91,11 +100,13 @@ public struct JSONSchemaForm: View {
         self.schema = schema
         self.uiSchema = uiSchema
         self.formData = formData
+        self.conditionalSchemas = conditionalSchemas
         self.onSubmit = onSubmit
         self.onError = onError
         self.formContext = formContext
         self.liveValidate = liveValidate
         self.showErrorList = showErrorList
+        self.showSubmitButton = showSubmitButton
         self.transformErrors = transformErrors
         self.disabled = disabled
         self.readonly = readonly
@@ -127,7 +138,7 @@ public struct JSONSchemaForm: View {
             )
 
             // Update just the error properties, keeping the same schema reference
-            var validatedState = self._state.wrappedValue
+            var validatedState = _state.wrappedValue
             validatedState.errors = validationResult.errors
             validatedState.errorSchema = validationResult.errorSchema
             self._state = State(initialValue: validatedState)
@@ -146,10 +157,13 @@ public struct JSONSchemaForm: View {
                     uiSchema: uiSchema,
                     id: idPrefix,
                     formData: formData,
-                    required: false
+                    required: false,
+                    conditionalSchemas: conditionalSchemas
                 )
 
-                submitButton
+                if showSubmitButton {
+                    submitButton
+                }
             }
         }
     }
@@ -198,7 +212,7 @@ public struct JSONSchemaForm: View {
         // Create new state with the updated data but keep using the original schema
         // to preserve field order
         let newState = FormState(
-            schema: self.schema,  // Use the original schema instead of a copy
+            schema: schema,  // Use the original schema instead of a copy
             uiSchema: uiSchema,
             formData: formData,
             edit: formData != nil,
@@ -241,4 +255,64 @@ public struct JSONSchemaForm: View {
         // If validation passes, call onSubmit
         onSubmit?(state.formData)
     }
+}
+
+#Preview {
+    struct PreviewWrapper: View {
+        @State private var formData = FormData.object(properties: [
+            "firstName": .string("John"),
+            "lastName": .string("Doe"),
+            "age": .number(30),
+            "email": .string("john@example.com"),
+            "subscribe": .boolean(true),
+        ])
+
+        var body: some View {
+            if let schema = try? JSONSchema(
+                jsonString: """
+                    {
+                        "title": "User Registration",
+                        "type": "object",
+                        "properties": {
+                            "firstName": {
+                                "type": "string",
+                                "title": "First Name"
+                            },
+                            "lastName": {
+                                "type": "string",
+                                "title": "Last Name"
+                            },
+                            "age": {
+                                "type": "number",
+                                "title": "Age"
+                            },
+                            "email": {
+                                "type": "string",
+                                "title": "Email",
+                                "format": "email"
+                            },
+                            "subscribe": {
+                                "type": "boolean",
+                                "title": "Subscribe to newsletter"
+                            }
+                        },
+                        "required": ["firstName", "lastName", "email"]
+                    }
+                    """
+            ) {
+                JSONSchemaForm(
+                    schema: schema,
+                    formData: $formData,
+                    onSubmit: { data in
+                        print("Submitted: \(String(describing: data))")
+                    }
+                )
+                .formStyle(.grouped)
+            } else {
+                Text("Failed to parse schema")
+            }
+        }
+    }
+
+    return PreviewWrapper()
 }
