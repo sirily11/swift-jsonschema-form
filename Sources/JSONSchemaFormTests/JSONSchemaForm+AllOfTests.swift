@@ -384,7 +384,7 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Boolean should render as toggle
-        let toggle = try form.inspect().find(viewWithId: "root_isActive").toggle()
+        let toggle = try form.inspect().find(viewWithId: "root_isActive").find(ViewType.Toggle.self)
         XCTAssertTrue(try toggle.isOn(), "Boolean toggle should be on")
     }
 
@@ -400,10 +400,10 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // String should render as text field
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "John", "Text field should display value")
 
-        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").textField()
+        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").find(ViewType.TextField.self)
         XCTAssertEqual(try lastNameField.input(), "Doe", "Text field should display value")
     }
 
@@ -420,7 +420,7 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Integer should render as text field (number input)
-        let countField = try form.inspect().find(viewWithId: "root_count").textField()
+        let countField = try form.inspect().find(viewWithId: "root_count").find(ViewType.TextField.self)
         XCTAssertEqual(try countField.input(), "42", "Number field should display integer value")
     }
 
@@ -440,10 +440,10 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested fields render
-        let nameField = try form.inspect().find(viewWithId: "root_user_name").textField()
+        let nameField = try form.inspect().find(viewWithId: "root_user_name").find(ViewType.TextField.self)
         XCTAssertEqual(try nameField.input(), "Alice", "Nested user.name should render")
 
-        let themeField = try form.inspect().find(viewWithId: "root_settings_theme").textField()
+        let themeField = try form.inspect().find(viewWithId: "root_settings_theme").find(ViewType.TextField.self)
         XCTAssertEqual(try themeField.input(), "dark", "Nested settings.theme should render")
     }
 
@@ -478,10 +478,10 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let data = Binding(wrappedValue: formData)
         let form = JSONSchemaForm(schema: schema, formData: data)
 
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "Initial First", "Should display initial value")
 
-        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").textField()
+        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").find(ViewType.TextField.self)
         XCTAssertEqual(try lastNameField.input(), "Initial Last", "Should display initial value")
     }
 
@@ -531,7 +531,7 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let data = Binding(wrappedValue: formData)
         let form = JSONSchemaForm(schema: schema, formData: data)
 
-        let soloField = try form.inspect().find(viewWithId: "root_solo").textField()
+        let soloField = try form.inspect().find(viewWithId: "root_solo").find(ViewType.TextField.self)
         XCTAssertEqual(try soloField.input(), "single value", "Single field should render")
     }
 
@@ -603,11 +603,11 @@ class JSONSchemaFormAllOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify toggle for lorem
-        let loremToggle = try form.inspect().find(viewWithId: "root_lorem").toggle()
+        let loremToggle = try form.inspect().find(viewWithId: "root_lorem").find(ViewType.Toggle.self)
         XCTAssertTrue(try loremToggle.isOn(), "Lorem toggle should be on")
 
         // Verify text field for ipsum
-        let ipsumField = try form.inspect().find(viewWithId: "root_ipsum").textField()
+        let ipsumField = try form.inspect().find(viewWithId: "root_ipsum").find(ViewType.TextField.self)
         XCTAssertEqual(try ipsumField.input(), "test ipsum", "Ipsum should display value")
     }
 

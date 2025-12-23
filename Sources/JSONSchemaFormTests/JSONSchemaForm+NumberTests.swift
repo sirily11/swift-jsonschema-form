@@ -27,7 +27,7 @@ class JSONSchemaFormNumberTests: XCTestCase {
             schema: schema, formData: data)
 
         // find the text field
-        let textField = try form.inspect().find(viewWithId: "root_age").textField()
+        let textField = try form.inspect().find(viewWithId: "root_age").find(ViewType.TextField.self)
         // get the text
         let text = try textField.input()
         // assert text is "25.0" (decimal representation)
@@ -56,7 +56,7 @@ class JSONSchemaFormNumberTests: XCTestCase {
             schema: schema, formData: data)
 
         // find the text field
-        let textField = try form.inspect().find(viewWithId: "root_age").textField()
+        let textField = try form.inspect().find(viewWithId: "root_age").find(ViewType.TextField.self)
         // get the text
         let text = try textField.input()
         // assert text is "30.0" (decimal representation)
@@ -95,8 +95,8 @@ class JSONSchemaFormNumberTests: XCTestCase {
             schema: schema, formData: data)
 
         // find the text fields
-        let ageTextField = try form.inspect().find(viewWithId: "root_stats_age").textField()
-        let heightTextField = try form.inspect().find(viewWithId: "root_stats_height").textField()
+        let ageTextField = try form.inspect().find(viewWithId: "root_stats_age").find(ViewType.TextField.self)
+        let heightTextField = try form.inspect().find(viewWithId: "root_stats_height").find(ViewType.TextField.self)
 
         // get the text values
         let age = try ageTextField.input()
@@ -128,7 +128,7 @@ class JSONSchemaFormNumberTests: XCTestCase {
             schema: schema, formData: data)
 
         // find the text field and the onChange handler view
-        let textField = try form.inspect().find(viewWithId: "root_age").textField()
+        let textField = try form.inspect().find(viewWithId: "root_age").find(ViewType.TextField.self)
         let vStack = try form.inspect().find(ViewType.VStack.self) { view in
             do {
                 let id = try view.id()

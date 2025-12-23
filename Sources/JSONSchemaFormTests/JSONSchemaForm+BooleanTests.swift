@@ -28,7 +28,7 @@ class JSONSchemaFormBooleanTests: XCTestCase {
         let form = JSONSchemaForm(
             schema: schema, formData: data)
         // find the toggle
-        let toggle = try form.inspect().find(viewWithId: "root_isActive").toggle()
+        let toggle = try form.inspect().find(viewWithId: "root_isActive").find(ViewType.Toggle.self)
         // toggle the value
         let isOn = try toggle.isOn()
         XCTAssertTrue(isOn)
@@ -56,7 +56,7 @@ class JSONSchemaFormBooleanTests: XCTestCase {
         let form = JSONSchemaForm(
             schema: schema, formData: data)
         // find the toggle
-        let toggle = try form.inspect().find(viewWithId: "root_isActive").toggle()
+        let toggle = try form.inspect().find(viewWithId: "root_isActive").find(ViewType.Toggle.self)
         // toggle the value
         let isOn = try toggle.isOn()
         XCTAssertFalse(isOn)

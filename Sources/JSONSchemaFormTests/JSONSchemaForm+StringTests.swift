@@ -26,7 +26,7 @@ class JSONSchemaFormStringTests: XCTestCase {
         let form = JSONSchemaForm(
             schema: schema, formData: data)
         // find the text field
-        let textField = try form.inspect().find(viewWithId: "root_name").textField()
+        let textField = try form.inspect().find(viewWithId: "root_name").find(ViewType.TextField.self)
         // get the text
         let text = try textField.input()
         // assert text is Jane
@@ -54,7 +54,7 @@ class JSONSchemaFormStringTests: XCTestCase {
         let form = JSONSchemaForm(
             schema: schema, formData: data)
         // find the text field
-        let textField = try form.inspect().find(viewWithId: "root_name").textField()
+        let textField = try form.inspect().find(viewWithId: "root_name").find(ViewType.TextField.self)
         // get the text
         let text = try textField.input()
         // assert text is Jane
@@ -92,8 +92,8 @@ class JSONSchemaFormStringTests: XCTestCase {
         let form = JSONSchemaForm(
             schema: schema, formData: data)
         // find the text field
-        let nameTextField = try form.inspect().find(viewWithId: "root_name").textField()
-        let addressTextField = try form.inspect().find(viewWithId: "root_address_city").textField()
+        let nameTextField = try form.inspect().find(viewWithId: "root_name").find(ViewType.TextField.self)
+        let addressTextField = try form.inspect().find(viewWithId: "root_address_city").find(ViewType.TextField.self)
         let customField = try form.inspect().find(viewWithId: "root_address_city_string_field")
         // get the text
         let address = try addressTextField.input()
@@ -124,7 +124,7 @@ class JSONSchemaFormStringTests: XCTestCase {
         let form = JSONSchemaForm(
             schema: schema, formData: data)
         // find the text field
-        let textField = try form.inspect().find(viewWithId: "root_name").textField()
+        let textField = try form.inspect().find(viewWithId: "root_name").find(ViewType.TextField.self)
         let customField = try form.inspect().find(viewWithId: "root_name_string_field")
         // enter text
         try textField.setInput("Jane")

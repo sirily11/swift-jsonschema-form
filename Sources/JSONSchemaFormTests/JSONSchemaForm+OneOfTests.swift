@@ -187,7 +187,7 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify lorem field renders with correct value
-        let loremField = try form.inspect().find(viewWithId: "root_lorem").textField()
+        let loremField = try form.inspect().find(viewWithId: "root_lorem").find(ViewType.TextField.self)
         XCTAssertEqual(try loremField.input(), "hello world", "Lorem field should display the value")
     }
 
@@ -226,7 +226,7 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form1 = JSONSchemaForm(schema: schema, formData: data1)
 
         // Should render lorem field (first option is default)
-        let loremField = try form1.inspect().find(viewWithId: "root_lorem").textField()
+        let loremField = try form1.inspect().find(viewWithId: "root_lorem").find(ViewType.TextField.self)
         XCTAssertEqual(try loremField.input(), "first option")
 
         // Test with second option data - verify form renders without error
@@ -253,7 +253,7 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Find the text field
-        let textField = try form.inspect().find(viewWithId: "root_lorem").textField()
+        let textField = try form.inspect().find(viewWithId: "root_lorem").find(ViewType.TextField.self)
         XCTAssertEqual(try textField.input(), "initial value")
 
         // Find the custom field wrapper to trigger onChange
@@ -285,7 +285,7 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify initial state - lorem field visible
-        let loremField = try form.inspect().find(viewWithId: "root_lorem").textField()
+        let loremField = try form.inspect().find(viewWithId: "root_lorem").find(ViewType.TextField.self)
         XCTAssertEqual(try loremField.input(), "initial")
 
         // Verify picker is rendered with correct ID
@@ -313,10 +313,10 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify initial fields render correctly
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
         XCTAssertEqual(try firstNameField.input(), "John")
 
-        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").textField()
+        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").find(ViewType.TextField.self)
         XCTAssertEqual(try lastNameField.input(), "Doe")
 
         // Verify picker is present for switching
@@ -341,7 +341,7 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify the field renders
-        let nameField = try form.inspect().find(viewWithId: "root_name").textField()
+        let nameField = try form.inspect().find(viewWithId: "root_name").find(ViewType.TextField.self)
         XCTAssertEqual(try nameField.input(), "Single Option Test")
 
         // Verify picker is NOT rendered when there's only one option
@@ -365,10 +365,10 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify nested fields render correctly
-        let nameField = try form.inspect().find(viewWithId: "root_person_name").textField()
+        let nameField = try form.inspect().find(viewWithId: "root_person_name").find(ViewType.TextField.self)
         XCTAssertEqual(try nameField.input(), "Alice")
 
-        let ageField = try form.inspect().find(viewWithId: "root_person_age").textField()
+        let ageField = try form.inspect().find(viewWithId: "root_person_age").find(ViewType.TextField.self)
         XCTAssertEqual(try ageField.input(), "30")
     }
 
@@ -432,8 +432,8 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         let form = JSONSchemaForm(schema: schema, formData: data)
 
         // Verify both fields render
-        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").textField()
-        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").textField()
+        let firstNameField = try form.inspect().find(viewWithId: "root_firstName").find(ViewType.TextField.self)
+        let lastNameField = try form.inspect().find(viewWithId: "root_lastName").find(ViewType.TextField.self)
         XCTAssertNotNil(firstNameField)
         XCTAssertNotNil(lastNameField)
     }
@@ -456,7 +456,7 @@ class JSONSchemaFormOneOfTests: XCTestCase {
         XCTAssertNotNil(picker)
 
         // Verify alpha field renders (first option selected)
-        let alphaField = try form.inspect().find(viewWithId: "root_alpha").textField()
+        let alphaField = try form.inspect().find(viewWithId: "root_alpha").find(ViewType.TextField.self)
         XCTAssertEqual(try alphaField.input(), "test")
     }
 
