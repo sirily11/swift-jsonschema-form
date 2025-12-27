@@ -18,7 +18,26 @@ struct ArrayField: Field {
     }
 
     var body: some View {
-        Section(fieldTitle) {
+        VStack {
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(fieldTitle)
+                    if let description = schema.description{
+                        Text(description)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
+                Spacer()
+            }
+            .padding(.bottom, 8)
+            arrayfieldBody()
+        }
+    }
+
+    @ViewBuilder
+    func arrayfieldBody() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             if case .array(let items) = formData.wrappedValue {
                 // Display existing items
                 if !items.isEmpty {
@@ -56,7 +75,8 @@ struct ArrayField: Field {
                                         var updatedItems = items
                                         updatedItems[index] = newValue
                                         formData.wrappedValue = FormData.array(items: updatedItems)
-                                    }),
+                                    }
+                                ),
                                 required: true,
                                 propertyName: propertyName
                             )
@@ -67,9 +87,13 @@ struct ArrayField: Field {
                         .foregroundColor(.secondary)
                         .italic()
                 }
-                // Add button
-                Button("Add Item") {
-                    addItem()
+
+                // Right-aligned Add button
+                HStack {
+                    Spacer()
+                    Button("Add Item") {
+                        addItem()
+                    }
                 }
             } else {
                 InvalidValueType(
@@ -78,7 +102,6 @@ struct ArrayField: Field {
                 )
             }
         }
-        .tag(propertyName ?? id)
     }
 
     // Get the UI schema for array items

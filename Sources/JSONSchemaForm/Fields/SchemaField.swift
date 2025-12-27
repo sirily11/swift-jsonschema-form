@@ -238,18 +238,6 @@ struct SchemaField: Field {
                 propertyName: propertyName,
                 conditionalSchemas: conditionalSchemas
             )
-
-        default:
-            FieldTemplate(
-                id: id,
-                label: fieldTitle,
-                description: schema.description,
-                required: required
-            ) {
-                UnsupportedField(
-                    reason: "Unsupported schema type"
-                )
-            }
         }
     }
 }
