@@ -32,12 +32,25 @@ struct ObjectField: Field {
     }
 
     var body: some View {
-        Section(fieldTitle) {
-            // Render properties according to the order
-            if let properties = properties {
-                ForEach(properties.keys.sorted(), id: \.self) { propertyName in
-                    if let propertySchema = properties[propertyName] {
-                        propertyView(name: propertyName, schema: propertySchema)
+        if fieldTitle.isEmpty {
+            Section {
+                // Render properties according to the order
+                if let properties = properties {
+                    ForEach(properties.keys.sorted(), id: \.self) { propertyName in
+                        if let propertySchema = properties[propertyName] {
+                            propertyView(name: propertyName, schema: propertySchema)
+                        }
+                    }
+                }
+            }
+        } else {
+            Section(fieldTitle) {
+                // Render properties according to the order
+                if let properties = properties {
+                    ForEach(properties.keys.sorted(), id: \.self) { propertyName in
+                        if let propertySchema = properties[propertyName] {
+                            propertyView(name: propertyName, schema: propertySchema)
+                        }
                     }
                 }
             }

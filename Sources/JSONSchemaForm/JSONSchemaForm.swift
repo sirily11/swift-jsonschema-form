@@ -209,7 +209,7 @@ public struct JSONSchemaForm: View {
         // Create new state with the updated data but keep using the original schema
         // to preserve field order
         let newState = FormState(
-            schema: schema,  // Use the original schema instead of a copy
+            schema: schema, // Use the original schema instead of a copy
             uiSchema: uiSchema,
             formData: formData,
             edit: formData != nil,
@@ -267,46 +267,67 @@ public struct JSONSchemaForm: View {
         var body: some View {
             if let schema = try? JSONSchema(
                 jsonString: """
-                    {
-                        "title": "User Registration",
-                        "type": "object",
-                        "properties": {
-                            "firstName": {
-                                "type": "string",
-                                "title": "First Name",
-                                "description": "Enter your first name"
-                            },
-                            "lastName": {
-                                "type": "string",
-                                "title": "Last Name"
-                            },
-                            "age": {
-                                "type": "number",
-                                "title": "Age"
-                            },
-                            "email": {
-                                "type": "string",
-                                "title": "Email",
-                                "format": "email"
-                            },
-                            "subscribe": {
-                                "type": "boolean",
-                                "title": "Subscribe to newsletter",
-                                "description": "Receive updates and offers via email"
-                            }
-                        },
-                        "required": ["firstName", "lastName", "email"]
+                {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://github.com/rxtech-lab/argo-trading/internal/backtest/engine/engine_v1/backtest-engine-v1-config",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "initial_capital",
+                    "broker",
+                    "start_time",
+                    "end_time",
+                    "decimal_precision"
+                  ],
+                  "properties": {
+                    "initial_capital": {
+                      "type": "number",
+                      "minimum": 0,
+                      "title": "Initial Capital",
+                      "description": "Starting capital for the backtest in USD"
+                    },
+                    "broker": {
+                      "type": "string",
+                      "title": "Broker",
+                      "description": "The broker to use for commission calculations"
+                    },
+                    "start_time": {
+                      "type": "array",
+                      "title": "Start Time",
+                      "description": "Optional start time for the backtest period",
+                      "items": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "end_time": {
+                      "type": "array",
+                      "title": "End Time",
+                      "description": "Optional end time for the backtest period",
+                      "items": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "decimal_precision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "title": "Decimal Precision",
+                      "description": "The number of decimal places allowed for quantity (0 means integers only)",
+                      "default": 1
                     }
-                    """
+                  }
+                }
+                """
             ) {
                 Form {
-                    JSONSchemaForm(
-                        schema: schema,
-                        formData: $formData,
-                        onSubmit: { data in
-                            print("Submitted: \(String(describing: data))")
-                        }
-                    )
+                    Section("Settings") {
+                        JSONSchemaForm(
+                            schema: schema,
+                            formData: $formData,
+                            showSubmitButton: false
+                        )
+                    }
                 }
                 .formStyle(.grouped)
             } else {

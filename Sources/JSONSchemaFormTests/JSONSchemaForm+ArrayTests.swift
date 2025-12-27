@@ -36,8 +36,8 @@ class JSONSchemaFormArrayTests: XCTestCase {
         )
 
         // Verify we can inspect the array field
-        let section = try arrayField.inspect().section()
-        XCTAssertNotNil(section)
+        let vstack = try arrayField.inspect().vStack()
+        XCTAssertNotNil(vstack)
 
         // Verify the form data is correct
         if case .array(let resultItems) = formData {
@@ -71,9 +71,9 @@ class JSONSchemaFormArrayTests: XCTestCase {
             propertyName: "items"
         )
 
-        // Find "No items" text within the section
-        let section = try arrayField.inspect().section()
-        let noItemsText = try section.find(text: "No items")
+        // Find "No items" text within the view
+        let vstack = try arrayField.inspect().vStack()
+        let noItemsText = try vstack.find(text: "No items")
         XCTAssertNotNil(noItemsText)
     }
 
@@ -100,8 +100,8 @@ class JSONSchemaFormArrayTests: XCTestCase {
         )
 
         // Verify we can inspect
-        let section = try arrayField.inspect().section()
-        XCTAssertNotNil(section)
+        let vstack = try arrayField.inspect().vStack()
+        XCTAssertNotNil(vstack)
 
         // Verify form data
         if case .array(let items) = formData {
@@ -137,8 +137,8 @@ class JSONSchemaFormArrayTests: XCTestCase {
         )
 
         // Verify initial state
-        let section = try arrayField.inspect().section()
-        XCTAssertNotNil(section)
+        let vstack = try arrayField.inspect().vStack()
+        XCTAssertNotNil(vstack)
 
         // Verify form data
         if case .array(let items) = formData {
@@ -180,8 +180,8 @@ class JSONSchemaFormArrayTests: XCTestCase {
         )
 
         // Verify we can inspect
-        let section = try arrayField.inspect().section()
-        XCTAssertNotNil(section)
+        let vstack = try arrayField.inspect().vStack()
+        XCTAssertNotNil(vstack)
 
         // Verify form data structure
         if case .array(let items) = formData {

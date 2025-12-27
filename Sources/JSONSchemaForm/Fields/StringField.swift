@@ -22,8 +22,12 @@ struct StringField: Field {
 
     // Extract format from schema if available
     private var format: String? {
-        // TODO: Implement
-        return nil
+        // only string schema has format
+        guard let stringSchema = schema.stringSchema else {
+            return nil
+        }
+
+        return stringSchema.format
     }
 
     init(
@@ -155,7 +159,7 @@ private struct TextWidget: View {
             title,
             text: value
         )
-        .id(id)
+        .id("\(id)_text")
     }
 }
 
@@ -175,7 +179,7 @@ private struct TextAreaWidget: View {
                 text: value
             )
             .frame(minHeight: 100)
-            .id(id)
+            .id("\(id)_textarea")
         }
     }
 }
@@ -212,7 +216,7 @@ private struct PasswordWidget: View {
                 }
             }
             .textFieldStyle(RoundedBorderTextFieldStyle())
-            .id(id)
+            .id("\(id)_password")
         }
     }
 }
@@ -242,7 +246,7 @@ private struct ColorWidget: View {
                 }
             )
         )
-        .id(id)
+        .id("\(id)_color")
     }
 }
 
@@ -258,7 +262,7 @@ private struct EmailWidget: View {
             label,
             text: value
         )
-        .id(id)
+        .id("\(id)_email")
     }
 }
 
@@ -275,7 +279,7 @@ private struct URLWidget: View {
             text: value
         )
         .textFieldStyle(RoundedBorderTextFieldStyle())
-        .id(id)
+        .id("\(id)_url")
     }
 }
 
@@ -320,7 +324,7 @@ private struct DateTimeWidget: View {
             ),
             displayedComponents: [.date, .hourAndMinute]
         )
-        .id(id)
+        .id("\(id)_datetime")
     }
 }
 
@@ -365,7 +369,7 @@ private struct DateWidget: View {
             ),
             displayedComponents: .date
         )
-        .id(id)
+        .id("\(id)_date")
     }
 }
 
