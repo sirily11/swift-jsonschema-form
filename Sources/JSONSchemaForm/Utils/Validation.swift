@@ -3,7 +3,7 @@ import JSONSchema
 
 /// Validation result containing errors and error schema
 struct ValidationResult {
-    var errors: [ValidationError]
+    var errors: [FormValidationError]
     var errorSchema: [String: Any]
 }
 
@@ -14,7 +14,7 @@ func validateFormData(
     customValidate: ((_ formData: Any?, _ errorSchema: inout [String: Any]) -> Void)? = nil
 ) -> ValidationResult {
     // Basic structure for errors
-    var errors: [ValidationError] = []
+    var errors: [FormValidationError] = []
     var errorSchema: [String: Any] = [:]
     
     // Perform JSON Schema validation
@@ -53,7 +53,7 @@ func validateFormData(
     case .oneOf:
         // For oneOf, at least one sub-schema must validate
         if let oneOfSchemas = schema.combinedSchema?.oneOf {
-            var allErrors: [[ValidationError]] = []
+            var allErrors: [[FormValidationError]] = []
             var hasValidOption = false
 
             for subSchema in oneOfSchemas {
@@ -115,10 +115,10 @@ func validateFormData(
     if let customValidate = customValidate {
         customValidate(formData, &errorSchema)
         
-        // Convert any errors added by custom validation to ValidationError objects
+        // Convert any errors added by custom validation to FormValidationError objects
         if let customErrors = errorSchema["__errors"] as? [String] {
             for message in customErrors {
-                errors.append(ValidationError(
+                errors.append(FormValidationError(
                     name: "custom",
                     message: message,
                     stack: message,
@@ -137,7 +137,7 @@ func validateFormData(
 private func validateString(
     value: Any?,
     context: JSONSchema.StringSchema,
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
     // Nil check for required fields would be handled separately
@@ -208,7 +208,7 @@ private func validateString(
 private func validateNumber(
     value: Any?,
     context: JSONSchema.NumberSchema,
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
     // Nil check for required fields would be handled separately
@@ -291,7 +291,7 @@ private func validateNumber(
 private func validateInteger(
     value: Any?,
     context: JSONSchema.IntegerSchema,
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
     // Nil check for required fields would be handled separately
@@ -379,7 +379,7 @@ private func validateInteger(
 /// Validates a boolean value
 private func validateBoolean(
     value: Any?,
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
     // Nil check for required fields would be handled separately
@@ -397,7 +397,7 @@ private func validateBoolean(
 private func validateObject(
     value: Any?,
     context: JSONSchema.ObjectSchema,
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
     // Nil check for required fields would be handled separately
@@ -465,7 +465,7 @@ private func validateObject(
 private func validateArray(
     value: Any?,
     context: JSONSchema.ArraySchema,
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
     // Nil check for required fields would be handled separately
@@ -535,10 +535,10 @@ private func addError(
     name: String,
     message: String,
     property: String = "",
-    errors: inout [ValidationError],
+    errors: inout [FormValidationError],
     errorSchema: inout [String: Any]
 ) {
-    let error = ValidationError(
+    let error = FormValidationError(
         name: name,
         message: message,
         stack: message,

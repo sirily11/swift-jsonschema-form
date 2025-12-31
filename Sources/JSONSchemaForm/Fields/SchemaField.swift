@@ -14,6 +14,17 @@ struct SchemaField: Field {
     /// Conditional schemas for if/then/else support (passed to AllOfField)
     var conditionalSchemas: [ConditionalSchema]?
 
+    /// Access to the form controller for field-level error display
+    @Environment(\.formController) private var formController
+
+    /// Returns field-level errors for this field from the controller
+    private var currentFieldErrors: [String]? {
+        guard let errors = formController?.errorsForField(id), !errors.isEmpty else {
+            return nil
+        }
+        return errors
+    }
+
     // Extract the field widget from uiSchema if present
     private var uiField: String? {
         return uiSchema?["ui:field"] as? String
@@ -79,6 +90,7 @@ struct SchemaField: Field {
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
+                errors: currentFieldErrors,
                 required: required
             ) {
                 StringField(
@@ -96,6 +108,7 @@ struct SchemaField: Field {
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
+                errors: currentFieldErrors,
                 required: required
             ) {
                 NumberField(
@@ -113,6 +126,7 @@ struct SchemaField: Field {
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
+                errors: currentFieldErrors,
                 required: required
             ) {
                 NumberField(
@@ -130,6 +144,7 @@ struct SchemaField: Field {
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
+                errors: currentFieldErrors,
                 required: required
             ) {
                 BooleanField(
@@ -181,6 +196,7 @@ struct SchemaField: Field {
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
+                errors: currentFieldErrors,
                 required: required
             ) {
                 Text("null")
@@ -193,6 +209,7 @@ struct SchemaField: Field {
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
+                errors: currentFieldErrors,
                 required: required
             ) {
                 EnumField(
