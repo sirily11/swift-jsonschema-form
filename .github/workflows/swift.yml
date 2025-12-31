@@ -19,18 +19,22 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Build and Test with Xcode
-        run: xcodebuild test -scheme JSONSchemaForm -destination 'platform=macOS' -enableCodeCoverage YES
+      - name: Build
+        run: swift build
 
-      - name: Generate test coverage report
-        if: success()
+      - name: Run tests with coverage
+        run: swift test --enable-code-coverage
+
+      - name: Generate coverage report
         run: |
           xcrun llvm-cov export -format="lcov" \
-          -instr-profile=$(find . -name "*.profdata") \
-          $(find . -name "JSONSchemaFormPackageTests") \
-          > coverage.lcov
-        continue-on-error: true
+            .build/debug/JSONSchemaFormPackageTests.xctest/Contents/MacOS/JSONSchemaFormPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata \
+            > coverage.lcov
 
       - name: Upload coverage to Codecov
-        if: success()
         uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.lcov
+          fail_ci_if_error: false

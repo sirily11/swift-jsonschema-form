@@ -1,5 +1,8 @@
 # JSONSchemaForm
 
+[![codecov](https://codecov.io/gh/sirily11/swift-jsonschema-form/graph/badge.svg?token=E1vIciV2TS)](https://codecov.io/gh/sirily11/swift-jsonschema-form)
+[![Swift Tests](https://github.com/sirily11/swift-jsonschema-form/actions/workflows/swift.yml/badge.svg)](https://github.com/sirily11/swift-jsonschema-form/actions/workflows/swift.yml)
+
 A SwiftUI component for building forms from JSON Schema. This library provides a convenient way to generate dynamic forms based on a JSON Schema, with built-in validation and customization options.
 
 ## Features
