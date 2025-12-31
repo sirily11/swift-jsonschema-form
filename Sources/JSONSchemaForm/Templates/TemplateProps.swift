@@ -19,7 +19,7 @@ struct BaseInputTemplateProps {
 }
 
 struct ErrorListTemplateProps {
-    let errors: [ValidationError]
+    let errors: [FormValidationError]
     let errorSchema: [String: Any]?
 }
 

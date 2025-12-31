@@ -2,48 +2,99 @@
 // https://docs.swift.org/swift-book
 
 import JSONSchema
+import JSONSchemaValidator
 import SwiftUI
 
-/// A struct representing the state of a JSON Schema form
-struct FormState {
-    /// The JSON schema object for the form
-    var schema: JSONSchema
+// MARK: - JSONSchemaForm
 
-    /// The uiSchema for the form
-    var uiSchema: [String: Any]?
-
-    /// The current data for the form
-    var formData: Any?
-
-    /// Flag indicating whether the form is in edit mode
-    var edit: Bool
-
-    /// The current list of errors for the form
-    var errors: [ValidationError]
-
-    /// The current errors, in ErrorSchema format, for the form
-    var errorSchema: [String: Any]
-}
-
-/// A SwiftUI form component that renders a form from a JSON schema
+/// A SwiftUI form component that renders a form from a JSON Schema.
+///
+/// `JSONSchemaForm` dynamically generates form fields based on a JSON Schema definition,
+/// handles validation, and manages form state. It supports live validation, programmatic
+/// submission, and customizable error handling through the `JSONSchemaFormController`.
+///
+/// ## Overview
+///
+/// The form automatically:
+/// - Renders appropriate field types based on schema (string, number, boolean, object, array)
+/// - Validates input against schema constraints
+/// - Displays validation errors at form and field levels
+/// - Supports conditional schemas (if/then/else, oneOf, anyOf, allOf)
+///
+/// ## Usage
+///
+/// ### Basic Usage
+///
+/// ```swift
+/// @State private var formData = FormData.object(properties: [:])
+///
+/// var body: some View {
+///     if let schema = try? JSONSchema(jsonString: schemaJSON) {
+///         JSONSchemaForm(
+///             schema: schema,
+///             formData: $formData
+///         )
+///     }
+/// }
+/// ```
+///
+/// ### With Controller for Programmatic Control
+///
+/// ```swift
+/// let controller = JSONSchemaFormController()
+///
+/// JSONSchemaForm(
+///     schema: schema,
+///     formData: $formData,
+///     liveValidate: true,
+///     controller: controller
+/// )
+///
+/// Button("Submit") {
+///     Task {
+///         let success = try await controller.submit()
+///     }
+/// }
+/// ```
+///
+/// ### With Error Handling
+///
+/// ```swift
+/// let controller = JSONSchemaFormController()
+/// controller.onValidationError = { errors in
+///     for error in errors {
+///         print(error.description)
+///     }
+/// }
+///
+/// JSONSchemaForm(
+///     schema: schema,
+///     formData: $formData,
+///     liveValidate: true,
+///     showErrorList: true,
+///     controller: controller
+/// )
+/// ```
 public struct JSONSchemaForm: View {
+    // MARK: - Properties
+
     /// The schema defining the form structure
     let schema: JSONSchema
 
     /// Optional UI schema for customizing the form appearance
     var uiSchema: [String: Any]?
 
-    /// Initial form data
+    /// Binding to the form data
     var formData: Binding<FormData>
 
     /// Conditional schemas for if/then/else support (extracted during preprocessing)
     var conditionalSchemas: [ConditionalSchema]?
 
-    /// Callback when form is submitted
+    /// Callback when form is submitted successfully (legacy callback, prefer using controller)
     var onSubmit: ((Any?) -> Void)?
 
-    /// Callback when form validation has errors
-    var onError: (([ValidationError]) -> Void)?
+    /// Callback when form validation has errors (legacy callback, prefer using controller)
+    var onError: (([FormValidationError]) -> Void)?
 
     /// Form context for passing data to fields
     var formContext: [String: Any]?
@@ -51,13 +102,13 @@ public struct JSONSchemaForm: View {
     /// Whether to validate the form as the user types
     var liveValidate: Bool = false
 
-    /// Whether to show the error list
+    /// Whether to show the error list at the top of the form
     var showErrorList: Bool = true
 
-    /// Whether to show the submit button
+    /// Whether to show the built-in submit button
     var showSubmitButton: Bool = true
 
-    /// Custom error transformer
+    /// Custom error transformer for modifying validation errors before display
     var transformErrors: (([ValidationError]) -> [ValidationError])?
 
     /// Whether the form is disabled
@@ -75,17 +126,51 @@ public struct JSONSchemaForm: View {
     /// String separator for field IDs
     var idSeparator: String = "_"
 
-    /// @State to track the current form state
-    @State private var state: FormState
+    // MARK: - Controller
+
+    /// External controller provided by the user
+    private var externalController: JSONSchemaFormController?
+
+    /// Internal controller created when no external controller is provided
+    @State private var internalController: JSONSchemaFormController = JSONSchemaFormController()
+
+    /// The active controller (external or internal)
+    private var controller: JSONSchemaFormController {
+        externalController ?? internalController
+    }
+
+    /// Tracks whether the controller has been configured
+    @State private var isConfigured: Bool = false
+
+    // MARK: - Initialization
 
     /// Initializes a new JSONSchemaForm
+    ///
+    /// - Parameters:
+    ///   - schema: The JSON Schema defining the form structure
+    ///   - uiSchema: Optional UI schema for customizing field appearance
+    ///   - formData: Binding to the form data
+    ///   - conditionalSchemas: Pre-extracted conditional schemas for if/then/else support
+    ///   - onSubmit: Legacy callback when form is submitted successfully
+    ///   - onError: Legacy callback when validation errors occur
+    ///   - formContext: Additional context data passed to fields
+    ///   - liveValidate: Whether to validate as the user types (default: false)
+    ///   - showErrorList: Whether to show error list at top of form (default: true)
+    ///   - showSubmitButton: Whether to show built-in submit button (default: true)
+    ///   - transformErrors: Function to transform validation errors before display
+    ///   - disabled: Whether the form is disabled (default: false)
+    ///   - readonly: Whether the form is read-only (default: false)
+    ///   - customValidate: Additional custom validation function
+    ///   - idPrefix: Prefix for field IDs (default: "root")
+    ///   - idSeparator: Separator for field IDs (default: "_")
+    ///   - controller: Optional controller for programmatic form control
     public init(
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
         formData: Binding<FormData>,
         conditionalSchemas: [ConditionalSchema]? = nil,
         onSubmit: ((Any?) -> Void)? = nil,
-        onError: (([ValidationError]) -> Void)? = nil,
+        onError: (([FormValidationError]) -> Void)? = nil,
         formContext: [String: Any]? = nil,
         liveValidate: Bool = false,
         showErrorList: Bool = true,
@@ -95,7 +180,8 @@ public struct JSONSchemaForm: View {
         readonly: Bool = false,
         customValidate: ((Any?, inout [String: Any]) -> Void)? = nil,
         idPrefix: String = "root",
-        idSeparator: String = "_"
+        idSeparator: String = "_",
+        controller: JSONSchemaFormController? = nil
     ) {
         self.schema = schema
         self.uiSchema = uiSchema
@@ -113,43 +199,17 @@ public struct JSONSchemaForm: View {
         self.customValidate = customValidate
         self.idPrefix = idPrefix
         self.idSeparator = idSeparator
-
-        // Create initial state with the same schema reference
-        let initialErrors: [ValidationError] = []
-        let initialErrorSchema: [String: Any] = [:]
-
-        // Initialize state property
-        self._state = State(
-            initialValue: FormState(
-                schema: schema,
-                uiSchema: uiSchema,
-                formData: formData,
-                edit: formData.wrappedValue != nil,
-                errors: initialErrors,
-                errorSchema: initialErrorSchema
-            ))
-
-        // After initialization, update state with validation if needed
-        if liveValidate && formData != nil {
-            let validationResult = validateFormData(
-                formData: formData,
-                schema: schema,
-                customValidate: customValidate
-            )
-
-            // Update just the error properties, keeping the same schema reference
-            var validatedState = _state.wrappedValue
-            validatedState.errors = validationResult.errors
-            validatedState.errorSchema = validationResult.errorSchema
-            self._state = State(initialValue: validatedState)
-        }
+        self.externalController = controller
     }
+
+    // MARK: - Body
 
     public var body: some View {
         Group {
-            if showErrorList && !state.errors.isEmpty {
+            if showErrorList && !controller.errors.isEmpty {
                 errorList
             }
+
             SchemaField(
                 schema: schema,
                 uiSchema: uiSchema,
@@ -163,162 +223,162 @@ public struct JSONSchemaForm: View {
                 submitButton
             }
         }
+        .environment(\.formController, controller)
+        .onAppear {
+            configureControllerIfNeeded()
+        }
+        .onChange(of: formData.wrappedValue) { _, _ in
+            controller.handleFormDataChange()
+        }
     }
 
-    /// Renders the error list
+    // MARK: - Private Views
+
+    /// Renders the error list at the top of the form
     private var errorList: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Errors")
                 .font(.headline)
                 .foregroundColor(.red)
 
-            ForEach(state.errors.indices, id: \.self) { index in
-                Text(state.errors[index].message)
-                    .foregroundColor(.red)
+            ForEach(controller.errors.indices, id: \.self) { index in
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.red)
+
+                    Text(controller.errors[index].description)
+                        .foregroundColor(.red)
+                }
+                .padding(.vertical, 4)
             }
         }
         .padding()
-        .background(Color.red.opacity(0.1))
+        .background(Color.red.opacity(0.05))
         .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.red.opacity(0.3), lineWidth: 1)
+        )
+        .padding(.bottom, 16)
     }
 
     /// Renders the submit button
     private var submitButton: some View {
         Button("Submit") {
-            handleSubmit()
+            Task {
+                do {
+                    let success = try await controller.submit()
+                    if success {
+                        onSubmit?(formData.wrappedValue.toDictionary())
+                    }
+                } catch {
+                    // Handle unexpected errors
+                }
+            }
         }
-        .disabled(disabled || !state.errors.isEmpty)
+        .disabled(disabled || controller.isSubmitting)
     }
 
-    /// Handles changes to form data
-    private func handleChange(_ newData: Any?) {
-        var formData = newData
+    // MARK: - Private Methods
 
-        // Validate the form data if needed
-        let validationResult: ValidationResult
-        if liveValidate {
-            validationResult = validateFormData(
-                formData: formData,
-                schema: schema,
-                customValidate: customValidate
-            )
-        } else {
-            validationResult = ValidationResult(errors: [], errorSchema: [:])
+    /// Configures the controller with form settings
+    private func configureControllerIfNeeded() {
+        guard !isConfigured else { return }
+
+        // Set up callbacks to bridge to legacy callbacks
+        controller.onValidationError = { [onError] errors in
+            // Convert SchemaValidationError to form's FormValidationError for legacy callback
+            let formErrors = errors.map { error in
+                FormValidationError(
+                    name: String(describing: type(of: error)),
+                    message: error.description,
+                    stack: error.description,
+                    property: nil
+                )
+            }
+            onError?(formErrors)
         }
 
-        // Create new state with the updated data but keep using the original schema
-        // to preserve field order
-        let newState = FormState(
-            schema: schema, // Use the original schema instead of a copy
-            uiSchema: uiSchema,
-            formData: formData,
-            edit: formData != nil,
-            errors: validationResult.errors,
-            errorSchema: validationResult.errorSchema
-        )
+        controller.onSubmitSuccess = { [onSubmit] formData in
+            onSubmit?(formData.toDictionary())
+        }
 
-        // Update state and call onChange callback
-        state = newState
-    }
-
-    /// Handles form submission
-    private func handleSubmit() {
-        // Validate the form data
-        let validationResult = validateFormData(
-            formData: state.formData,
+        controller.configure(
             schema: schema,
-            customValidate: customValidate
+            formData: formData,
+            liveValidate: liveValidate,
+            customValidate: customValidate,
+            transformErrors: transformErrors
         )
 
-        var errors = validationResult.errors
-
-        // Apply custom error transformation if provided
-        if let transformErrors = transformErrors {
-            errors = transformErrors(errors)
-        }
-
-        // If there are validation errors, update state and call onError
-        if !errors.isEmpty {
-            // Update only the errors and errorSchema in state, keeping the original schema
-            var updatedState = state
-            updatedState.errors = errors
-            updatedState.errorSchema = validationResult.errorSchema
-            state = updatedState
-
-            onError?(errors)
-            return
-        }
-
-        // If validation passes, call onSubmit
-        onSubmit?(state.formData)
+        isConfigured = true
     }
 }
 
-#Preview {
+// MARK: - Previews
+
+#Preview("Basic Form") {
     struct PreviewWrapper: View {
         @State private var formData = FormData.object(properties: [
-            "firstName": .string("John"),
-            "lastName": .string("Doe"),
-            "age": .number(30),
-            "email": .string("john@example.com"),
-            "subscribe": .boolean(true),
+            "initial_capital": .number(10000),
+            "broker": .string("Interactive Brokers"),
+            "start_time": .array(items: []),
+            "end_time": .array(items: []),
+            "decimal_precision": .number(2),
         ])
 
         var body: some View {
             if let schema = try? JSONSchema(
                 jsonString: """
-                {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://github.com/rxtech-lab/argo-trading/internal/backtest/engine/engine_v1/backtest-engine-v1-config",
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "initial_capital",
-                    "broker",
-                    "start_time",
-                    "end_time",
-                    "decimal_precision"
-                  ],
-                  "properties": {
-                    "initial_capital": {
-                      "type": "number",
-                      "minimum": 0,
-                      "title": "Initial Capital",
-                      "description": "Starting capital for the backtest in USD"
-                    },
-                    "broker": {
-                      "type": "string",
-                      "title": "Broker",
-                      "description": "The broker to use for commission calculations"
-                    },
-                    "start_time": {
-                      "type": "array",
-                      "title": "Start Time",
-                      "description": "Optional start time for the backtest period",
-                      "items": {
-                        "type": "string",
-                        "format": "date-time"
+                    {
+                      "$schema": "https://json-schema.org/draft/2020-12/schema",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "initial_capital",
+                        "broker",
+                        "decimal_precision"
+                      ],
+                      "properties": {
+                        "initial_capital": {
+                          "type": "number",
+                          "minimum": 0,
+                          "title": "Initial Capital",
+                          "description": "Starting capital for the backtest in USD"
+                        },
+                        "broker": {
+                          "type": "string",
+                          "title": "Broker",
+                          "description": "The broker to use for commission calculations"
+                        },
+                        "start_time": {
+                          "type": "array",
+                          "title": "Start Time",
+                          "description": "Optional start time for the backtest period",
+                          "items": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "end_time": {
+                          "type": "array",
+                          "title": "End Time",
+                          "description": "Optional end time for the backtest period",
+                          "items": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "decimal_precision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "title": "Decimal Precision",
+                          "description": "The number of decimal places allowed for quantity",
+                          "default": 1
+                        }
                       }
-                    },
-                    "end_time": {
-                      "type": "array",
-                      "title": "End Time",
-                      "description": "Optional end time for the backtest period",
-                      "items": {
-                        "type": "string",
-                        "format": "date-time"
-                      }
-                    },
-                    "decimal_precision": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "title": "Decimal Precision",
-                      "description": "The number of decimal places allowed for quantity (0 means integers only)",
-                      "default": 1
                     }
-                  }
-                }
-                """
+                    """
             ) {
                 Form {
                     Section("Settings") {
@@ -337,4 +397,180 @@ public struct JSONSchemaForm: View {
     }
 
     return PreviewWrapper()
+}
+
+#Preview("Form with Validation Errors") {
+    struct ErrorPreviewWrapper: View {
+        @State private var formData = FormData.object(properties: [
+            "name": .string("Jo"),  // Too short - will trigger minLength error
+            "email": .string("invalid-email"),  // Invalid format
+            "age": .number(-5),  // Negative - will trigger minimum error
+        ])
+
+        let controller = JSONSchemaFormController()
+
+        var body: some View {
+            if let schema = try? JSONSchema(
+                jsonString: """
+                    {
+                      "type": "object",
+                      "required": ["name", "email", "age"],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "title": "Name",
+                          "description": "Your full name (at least 3 characters)",
+                          "minLength": 3
+                        },
+                        "email": {
+                          "type": "string",
+                          "title": "Email",
+                          "description": "Your email address",
+                          "format": "email"
+                        },
+                        "age": {
+                          "type": "integer",
+                          "title": "Age",
+                          "description": "Your age (must be positive)",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                    """
+            ) {
+                NavigationStack {
+                    Form {
+                        Section("User Information") {
+                            JSONSchemaForm(
+                                schema: schema,
+                                formData: $formData,
+                                liveValidate: true,
+                                showErrorList: true,
+                                showSubmitButton: false,
+                                controller: controller
+                            )
+                        }
+
+                        Section {
+                            Button("Validate") {
+                                controller.validate()
+                            }
+
+                            Button("Submit") {
+                                Task {
+                                    let success = try? await controller.submit()
+                                    print("Submit result: \(success ?? false)")
+                                }
+                            }
+                            .disabled(!controller.isValid || controller.isSubmitting)
+
+                            Button("Clear Errors") {
+                                controller.clearErrors()
+                            }
+                        }
+
+                        Section("Controller State") {
+                            LabeledContent("Is Valid", value: controller.isValid ? "Yes" : "No")
+                            LabeledContent("Error Count", value: "\(controller.errors.count)")
+                            LabeledContent("Is Submitting", value: controller.isSubmitting ? "Yes" : "No")
+                        }
+                    }
+                    .formStyle(.grouped)
+                    .navigationTitle("Form with Errors")
+                }
+            } else {
+                Text("Failed to parse schema")
+            }
+        }
+    }
+
+    return ErrorPreviewWrapper()
+}
+
+#Preview("Form with Programmatic Controller") {
+    struct ControllerPreviewWrapper: View {
+        @State private var formData = FormData.object(properties: [
+            "username": .string(""),
+            "password": .string(""),
+        ])
+
+        let controller = JSONSchemaFormController()
+        @State private var submitResult: String = ""
+
+        var body: some View {
+            if let schema = try? JSONSchema(
+                jsonString: """
+                    {
+                      "type": "object",
+                      "required": ["username", "password"],
+                      "properties": {
+                        "username": {
+                          "type": "string",
+                          "title": "Username",
+                          "description": "Enter your username (min 3 chars)",
+                          "minLength": 3
+                        },
+                        "password": {
+                          "type": "string",
+                          "title": "Password",
+                          "description": "Enter your password (min 8 chars)",
+                          "minLength": 8
+                        }
+                      }
+                    }
+                    """
+            ) {
+                NavigationStack {
+                    Form {
+                        Section("Login") {
+                            JSONSchemaForm(
+                                schema: schema,
+                                formData: $formData,
+                                liveValidate: true,
+                                showErrorList: true,
+                                showSubmitButton: false,
+                                controller: controller
+                            )
+                        }
+
+                        Section {
+                            Button("Login") {
+                                Task {
+                                    do {
+                                        let success = try await controller.submit()
+                                        submitResult = success ? "Login successful!" : "Validation failed"
+                                    } catch {
+                                        submitResult = "Error: \(error)"
+                                    }
+                                }
+                            }
+                            .disabled(controller.isSubmitting)
+
+                            if !submitResult.isEmpty {
+                                Text(submitResult)
+                                    .foregroundColor(submitResult.contains("successful") ? .green : .red)
+                            }
+                        }
+                    }
+                    .formStyle(.grouped)
+                    .navigationTitle("Programmatic Submit")
+                    .onAppear {
+                        controller.onValidationError = { errors in
+                            print("Validation errors: \(errors.count)")
+                            for error in errors {
+                                print("  - \(error.description)")
+                            }
+                        }
+                        controller.onSubmitSuccess = { data in
+                            print("Form submitted with data: \(data)")
+                        }
+                    }
+                }
+            } else {
+                Text("Failed to parse schema")
+            }
+        }
+    }
+
+    return ControllerPreviewWrapper()
 }
