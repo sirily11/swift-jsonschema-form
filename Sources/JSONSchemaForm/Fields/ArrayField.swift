@@ -10,6 +10,17 @@ struct ArrayField: Field {
     var required: Bool
     var propertyName: String?
 
+    /// Access to the form controller for field-level error display
+    @Environment(\.formController) private var formController
+
+    /// Returns field-level errors for this field from the controller
+    private var currentFieldErrors: [String]? {
+        guard let errors = formController?.errorsForField(id), !errors.isEmpty else {
+            return nil
+        }
+        return errors
+    }
+
     private var arraySchema: JSONSchema.ArraySchema? {
         guard case .array = schema.type else {
             return nil
@@ -32,6 +43,18 @@ struct ArrayField: Field {
             }
             .padding(.bottom, 8)
             arrayfieldBody()
+
+            // Display field-level errors
+            if let errors = currentFieldErrors, !errors.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(errors, id: \.self) { error in
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
+                }
+                .padding(.top, 4)
+            }
         }
     }
 
