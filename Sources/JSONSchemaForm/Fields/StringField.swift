@@ -317,6 +317,7 @@ private struct DateTimeWidget: View {
             selection: Binding(
                 get: { self.date },
                 set: { newDate in
+                    self.date = newDate
                     let formatter = ISO8601DateFormatter()
                     formatter.formatOptions = [.withInternetDateTime]
                     value.wrappedValue = formatter.string(from: newDate)
@@ -362,6 +363,7 @@ private struct DateWidget: View {
             selection: Binding(
                 get: { self.date },
                 set: { newDate in
+                    self.date = newDate
                     let formatter = DateFormatter()
                     formatter.dateFormat = "yyyy-MM-dd"
                     value.wrappedValue = formatter.string(from: newDate)
@@ -405,4 +407,70 @@ extension Color {
         let hex = String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
         return hex
     }
+}
+
+// MARK: - Previews
+
+#Preview("Date Field") {
+    @Previewable @State var formData: FormData = .string("2025-01-15")
+
+    let schema = JSONSchema.string(format: "date")
+
+    StringField(
+        schema: schema,
+        uiSchema: nil,
+        id: "root_birthdate",
+        formData: $formData,
+        required: false,
+        propertyName: "birthdate"
+    )
+    .padding()
+}
+
+#Preview("Date Field - Empty") {
+    @Previewable @State var formData: FormData = .string("")
+
+    let schema = JSONSchema.string(format: "date")
+
+    StringField(
+        schema: schema,
+        uiSchema: nil,
+        id: "root_date",
+        formData: $formData,
+        required: true,
+        propertyName: "date"
+    )
+    .padding()
+}
+
+#Preview("DateTime Field") {
+    @Previewable @State var formData: FormData = .string("2025-01-15T14:30:00Z")
+
+    let schema = JSONSchema.string(format: "date-time")
+
+    StringField(
+        schema: schema,
+        uiSchema: nil,
+        id: "root_appointment",
+        formData: $formData,
+        required: false,
+        propertyName: "appointment"
+    )
+    .padding()
+}
+
+#Preview("DateTime Field - Empty") {
+    @Previewable @State var formData: FormData = .string("")
+
+    let schema = JSONSchema.string(format: "date-time")
+
+    StringField(
+        schema: schema,
+        uiSchema: nil,
+        id: "root_datetime",
+        formData: $formData,
+        required: true,
+        propertyName: "datetime"
+    )
+    .padding()
 }

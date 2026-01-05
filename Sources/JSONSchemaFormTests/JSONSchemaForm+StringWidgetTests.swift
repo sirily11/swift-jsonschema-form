@@ -268,6 +268,146 @@ class JSONSchemaFormStringWidgetTests: XCTestCase {
         XCTAssertNotNil(datePicker)
     }
 
+    // MARK: - Value Update Tests
+
+    @MainActor
+    func testDateFieldMultipleConsecutiveUpdates() async throws {
+        // Regression test: verifies that multiple consecutive date updates work correctly
+        // This reproduces the "reset on next update" bug where the second update would
+        // reset to the first value due to internal state not being synchronized
+        let formData = FormData.object(properties: [
+            "birthday": .string("2024-01-15")
+        ])
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "birthday": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                }
+                """)
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(schema: schema, formData: data)
+
+        let stringField = try form.inspect().find(viewWithId: "root_birthday_string_field")
+
+        // First update
+        try stringField.callOnChange(oldValue: "2024-01-15", newValue: "2024-06-20")
+        XCTAssertEqual(data.wrappedValue.object?["birthday"], .string("2024-06-20"))
+
+        // Second consecutive update - this should NOT reset to "2024-01-15"
+        try stringField.callOnChange(oldValue: "2024-06-20", newValue: "2024-12-25")
+        XCTAssertEqual(data.wrappedValue.object?["birthday"], .string("2024-12-25"))
+
+        // Third update to verify continued consistency
+        try stringField.callOnChange(oldValue: "2024-12-25", newValue: "2025-03-01")
+        XCTAssertEqual(data.wrappedValue.object?["birthday"], .string("2025-03-01"))
+    }
+
+    @MainActor
+    func testDateTimeFieldMultipleConsecutiveUpdates() async throws {
+        // Regression test: verifies that multiple consecutive datetime updates work correctly
+        let formData = FormData.object(properties: [
+            "appointment": .string("2024-01-15T10:30:00Z")
+        ])
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "appointment": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                }
+                """)
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(schema: schema, formData: data)
+
+        let stringField = try form.inspect().find(viewWithId: "root_appointment_string_field")
+
+        // First update
+        try stringField.callOnChange(oldValue: "2024-01-15T10:30:00Z", newValue: "2024-06-20T14:00:00Z")
+        XCTAssertEqual(data.wrappedValue.object?["appointment"], .string("2024-06-20T14:00:00Z"))
+
+        // Second consecutive update - this should NOT reset to initial value
+        try stringField.callOnChange(oldValue: "2024-06-20T14:00:00Z", newValue: "2024-12-25T09:15:00Z")
+        XCTAssertEqual(data.wrappedValue.object?["appointment"], .string("2024-12-25T09:15:00Z"))
+
+        // Third update - changing only the time portion
+        try stringField.callOnChange(oldValue: "2024-12-25T09:15:00Z", newValue: "2024-12-25T18:45:00Z")
+        XCTAssertEqual(data.wrappedValue.object?["appointment"], .string("2024-12-25T18:45:00Z"))
+    }
+
+    @MainActor
+    func testDateFieldValueUpdate() async throws {
+        let formData = FormData.object(properties: [
+            "birthday": .string("2024-01-15")
+        ])
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "birthday": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                }
+                """)
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(schema: schema, formData: data)
+
+        // Find the StringField that wraps the DateWidget
+        let stringField = try form.inspect().find(viewWithId: "root_birthday_string_field")
+
+        // Simulate changing the date value
+        try stringField.callOnChange(oldValue: "2024-01-15", newValue: "2024-06-20")
+
+        // Verify formData was updated
+        XCTAssertEqual(data.wrappedValue.object?["birthday"], .string("2024-06-20"))
+    }
+
+    @MainActor
+    func testDateTimeFieldValueUpdate() async throws {
+        let formData = FormData.object(properties: [
+            "appointment": .string("2024-01-15T10:30:00Z")
+        ])
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "appointment": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                }
+                """)
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(schema: schema, formData: data)
+
+        // Find the StringField that wraps the DateTimeWidget
+        let stringField = try form.inspect().find(viewWithId: "root_appointment_string_field")
+
+        // Simulate changing the datetime value
+        try stringField.callOnChange(oldValue: "2024-01-15T10:30:00Z", newValue: "2024-06-20T14:00:00Z")
+
+        // Verify formData was updated
+        XCTAssertEqual(data.wrappedValue.object?["appointment"], .string("2024-06-20T14:00:00Z"))
+    }
+
     // MARK: - Edge Case Tests
 
     @MainActor
