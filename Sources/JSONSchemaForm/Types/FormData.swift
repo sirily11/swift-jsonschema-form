@@ -5,7 +5,7 @@ protocol Describable {
     func describe() -> String
 }
 
-public enum FormData: Equatable, Describable, Codable {
+public enum FormData: Equatable, Describable, Codable, Sendable {
     case object(properties: [String: FormData])
     case array(items: [FormData])
     case string(String)
