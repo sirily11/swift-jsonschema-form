@@ -103,7 +103,7 @@ public struct JSONSchemaForm: View {
     var liveValidate: Bool = false
 
     /// Whether to show the error list at the top of the form
-    var showErrorList: Bool = true
+    var showErrorList: Bool = false
 
     /// Whether to show the built-in submit button
     var showSubmitButton: Bool = true
@@ -155,7 +155,7 @@ public struct JSONSchemaForm: View {
     ///   - onError: Legacy callback when validation errors occur
     ///   - formContext: Additional context data passed to fields
     ///   - liveValidate: Whether to validate as the user types (default: false)
-    ///   - showErrorList: Whether to show error list at top of form (default: true)
+    ///   - showErrorList: Whether to show error list at top of form (default: false)
     ///   - showSubmitButton: Whether to show built-in submit button (default: true)
     ///   - transformErrors: Function to transform validation errors before display
     ///   - disabled: Whether the form is disabled (default: false)
@@ -173,7 +173,7 @@ public struct JSONSchemaForm: View {
         onError: (([FormValidationError]) -> Void)? = nil,
         formContext: [String: Any]? = nil,
         liveValidate: Bool = false,
-        showErrorList: Bool = true,
+        showErrorList: Bool = false,
         showSubmitButton: Bool = true,
         transformErrors: (([ValidationError]) -> [ValidationError])? = nil,
         disabled: Bool = false,
@@ -366,7 +366,7 @@ public struct JSONSchemaForm: View {
                           "description": "Optional end time for the backtest period",
                           "items": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date"
                           }
                         },
                         "decimal_precision": {
@@ -399,7 +399,7 @@ public struct JSONSchemaForm: View {
     return PreviewWrapper()
 }
 
-#Preview("Form with Validation Errors") {
+#Preview("Form with Field-Level Errors") {
     struct ErrorPreviewWrapper: View {
         @State private var formData = FormData.object(properties: [
             "name": .string("Jo"),  // Too short - will trigger minLength error
@@ -445,7 +445,6 @@ public struct JSONSchemaForm: View {
                                 schema: schema,
                                 formData: $formData,
                                 liveValidate: true,
-                                showErrorList: true,
                                 showSubmitButton: false,
                                 controller: controller
                             )
@@ -476,7 +475,7 @@ public struct JSONSchemaForm: View {
                         }
                     }
                     .formStyle(.grouped)
-                    .navigationTitle("Form with Errors")
+                    .navigationTitle("Field-Level Errors")
                 }
             } else {
                 Text("Failed to parse schema")
@@ -527,7 +526,6 @@ public struct JSONSchemaForm: View {
                                 schema: schema,
                                 formData: $formData,
                                 liveValidate: true,
-                                showErrorList: true,
                                 showSubmitButton: false,
                                 controller: controller
                             )
