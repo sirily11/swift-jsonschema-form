@@ -384,7 +384,6 @@ public final class JSONSchemaFormController: Sendable {
             .numberTooSmall(_, _, _, let path),
             .numberTooLarge(_, _, _, let path),
             .notMultipleOf(_, _, let path),
-            .requiredPropertyMissing(_, let path),
             .additionalPropertyNotAllowed(_, let path),
             .tooFewProperties(_, _, let path),
             .tooManyProperties(_, _, let path),
@@ -398,6 +397,9 @@ public final class JSONSchemaFormController: Sendable {
             .oneOfFailed(_, let path),
             .notFailed(let path):
             return path
+        case .requiredPropertyMissing(let property, let path):
+            // Include property name in the path so error maps to the correct field
+            return path.isEmpty ? property : "\(path)/\(property)"
         case .invalidSchema:
             return ""
         }
@@ -405,12 +407,13 @@ public final class JSONSchemaFormController: Sendable {
 
     /// Converts a JSON path to a form field ID.
     ///
-    /// Transforms paths like `.address.street` to field IDs like `root_address_street`.
+    /// Transforms paths like `address/street` to field IDs like `root_address_street`.
     private func convertToFieldId(_ jsonPath: String) -> String {
         guard !jsonPath.isEmpty else { return "root" }
 
         let cleaned = jsonPath
             .replacingOccurrences(of: ".", with: "_")
+            .replacingOccurrences(of: "/", with: "_")
             .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
 
         return "root_\(cleaned)"
