@@ -36,7 +36,7 @@ struct ObjectField: Field {
             Section {
                 // Render properties according to the order
                 if let properties = properties {
-                    ForEach(properties.keys.sorted(), id: \.self) { propertyName in
+                    ForEach(Array(properties.keys), id: \.self) { propertyName in
                         if let propertySchema = properties[propertyName] {
                             propertyView(name: propertyName, schema: propertySchema)
                         }
@@ -47,7 +47,7 @@ struct ObjectField: Field {
             Section(fieldTitle) {
                 // Render properties according to the order
                 if let properties = properties {
-                    ForEach(properties.keys.sorted(), id: \.self) { propertyName in
+                    ForEach(Array(properties.keys), id: \.self) { propertyName in
                         if let propertySchema = properties[propertyName] {
                             propertyView(name: propertyName, schema: propertySchema)
                         }

@@ -80,7 +80,7 @@ struct OneOfField: Field {
         }
         let selectedOption = options[selectedOptionIndex]
         if let props = selectedOption.objectSchema?.properties {
-            return OrderedDictionary(uniqueKeys: props.keys.sorted(), values: props.keys.sorted().compactMap { props[$0] })
+            return OrderedDictionary(uniqueKeys: props.keys, values: props.values)
         }
         return [:]
     }
@@ -108,7 +108,7 @@ struct OneOfField: Field {
 
             // Render selected option's fields
             if !selectedProperties.isEmpty {
-                ForEach(selectedProperties.keys.sorted(), id: \.self) { propertyName in
+                ForEach(Array(selectedProperties.keys), id: \.self) { propertyName in
                     if let propertySchema = selectedProperties[propertyName] {
                         propertyView(name: propertyName, schema: propertySchema)
                     }
