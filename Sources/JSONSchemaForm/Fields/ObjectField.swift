@@ -18,7 +18,10 @@ struct ObjectField: Field {
         }
 
         let dict = schema.objectSchema?.properties ?? [:]
-        let orderedProperties = OrderedDictionary(uniqueKeys: dict.keys, values: dict.values)
+        var orderedProperties = OrderedDictionary<String, JSONSchema>()
+        for (key, value) in dict {
+            orderedProperties[key] = value
+        }
         return orderedProperties
     }
 

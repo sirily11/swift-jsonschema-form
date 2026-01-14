@@ -58,7 +58,11 @@ struct AllOfField: Field {
     /// Get ordered properties from effective merged schema
     private var orderedProperties: OrderedDictionary<String, JSONSchema> {
         let dict = effectiveMergedSchema.properties
-        return OrderedDictionary(uniqueKeys: dict.keys, values: dict.values)
+        var result = OrderedDictionary<String, JSONSchema>()
+        for (key, value) in dict {
+            result[key] = value
+        }
+        return result
     }
 
     var body: some View {

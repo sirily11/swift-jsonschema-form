@@ -80,7 +80,11 @@ struct OneOfField: Field {
         }
         let selectedOption = options[selectedOptionIndex]
         if let props = selectedOption.objectSchema?.properties {
-            return OrderedDictionary(uniqueKeys: props.keys, values: props.values)
+            var result = OrderedDictionary<String, JSONSchema>()
+            for (key, value) in props {
+                result[key] = value
+            }
+            return result
         }
         return [:]
     }
