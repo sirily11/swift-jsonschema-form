@@ -18,7 +18,10 @@ struct ObjectField: Field {
         }
 
         let dict = schema.objectSchema?.properties ?? [:]
-        let orderedProperties = OrderedDictionary(uniqueKeys: dict.keys, values: dict.values)
+        var orderedProperties = OrderedDictionary<String, JSONSchema>()
+        for (key, value) in dict {
+            orderedProperties[key] = value
+        }
         return orderedProperties
     }
 
@@ -36,7 +39,7 @@ struct ObjectField: Field {
             Section {
                 // Render properties according to the order
                 if let properties = properties {
-                    ForEach(properties.keys.sorted(), id: \.self) { propertyName in
+                    ForEach(Array(properties.keys), id: \.self) { propertyName in
                         if let propertySchema = properties[propertyName] {
                             propertyView(name: propertyName, schema: propertySchema)
                         }
@@ -47,7 +50,7 @@ struct ObjectField: Field {
             Section(fieldTitle) {
                 // Render properties according to the order
                 if let properties = properties {
-                    ForEach(properties.keys.sorted(), id: \.self) { propertyName in
+                    ForEach(Array(properties.keys), id: \.self) { propertyName in
                         if let propertySchema = properties[propertyName] {
                             propertyView(name: propertyName, schema: propertySchema)
                         }
