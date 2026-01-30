@@ -28,7 +28,7 @@ Add the package to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/JSONSchemaForm.git", .upToNextMajor(from: "1.0.0"))
+    .package(url: "https://github.com/sirily11/swift-jsonschema-form.git", .upToNextMajor(from: "1.0.0"))
 ],
 targets: [
     .target(
@@ -39,7 +39,7 @@ targets: [
 
 Or add it through Xcode:
 1. Go to File > Swift Packages > Add Package Dependency
-2. Enter the repository URL: `https://github.com/yourusername/JSONSchemaForm.git`
+2. Enter the repository URL: `https://github.com/sirily11/swift-jsonschema-form.git`
 3. Choose the version you want
 
 ## Usage
@@ -93,36 +93,6 @@ struct ContentView: View {
         .padding()
     }
 }
-```
-
-### Customizing UI with uiSchema
-
-Use a `uiSchema` to customize the appearance and behavior of form fields:
-
-```swift
-let uiSchema: [String: Any] = [
-    "name": [
-        "ui:autofocus": true,
-        "ui:placeholder": "Enter your full name"
-    ],
-    "email": [
-        "ui:placeholder": "email@example.com"
-    ],
-    "age": [
-        "ui:widget": "updown"  // Use an up/down control instead of a text field
-    ],
-    "agreeToTerms": [
-        "ui:widget": "radio"  // Use radio buttons instead of a checkbox
-    ]
-]
-
-// Then in your view:
-JSONSchemaForm(
-    schema: schema,
-    uiSchema: uiSchema,
-    formData: formData,
-    // ... other props
-)
 ```
 
 ### Custom Validation
@@ -227,28 +197,6 @@ The `JSONSchemaForm` component accepts the following properties:
 | `customValidate` | `((Any?, inout [String: Any]) -> Void)?` | Custom validation function |
 | `idPrefix` | `String` | Prefix for form field IDs (default: "root") |
 | `idSeparator` | `String` | Separator for nested field IDs (default: "_") |
-
-## UI Schema Options
-
-The `uiSchema` object lets you customize how the form is rendered:
-
-### Global Options
-
-- `ui:readonly`: Make all fields read-only
-- `ui:disabled`: Disable all fields
-- `ui:classNames`: Add custom CSS class names to the form
-
-### Field-specific Options
-
-For each field in your schema, you can specify:
-
-- `ui:widget`: Override the default widget (e.g., "textarea", "select", "radio", "password")
-- `ui:placeholder`: Add placeholder text to input fields
-- `ui:autofocus`: Automatically focus on this field when the form loads
-- `ui:help`: Help text to display below the field
-- `ui:title`: Custom title for the field
-- `ui:description`: Custom description for the field
-- `ui:options`: Additional widget-specific options
 
 ## License
 
