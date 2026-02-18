@@ -211,6 +211,10 @@ public final class JSONSchemaFormController: Sendable {
         self.liveValidate = liveValidate
         self.customValidate = customValidate
         self.transformErrors = transformErrors
+
+        // Apply schema defaults to formData so that required fields
+        // with default values are populated before any validation runs.
+        formData.wrappedValue = formData.wrappedValue.applyingDefaults(schema: schema)
     }
 
     // MARK: - Public API

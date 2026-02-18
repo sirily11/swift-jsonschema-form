@@ -843,4 +843,232 @@ class JSONSchemaFormControllerTests: XCTestCase {
             XCTFail("Received form data should be an object")
         }
     }
+
+    // MARK: - Default Value Population Tests (Real-World Scenarios)
+
+    @MainActor
+    func testSubmitWithEmptyFormDataAndBooleanDefaultAppliesDefault() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "required": ["enabled"],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                }
+                """)
+
+        // Start with empty formData — the real-world scenario
+        var formData = FormData.object(properties: [:])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        var receivedFormData: FormData?
+        controller.onSubmitSuccess = { data in
+            submitSuccessCalled = true
+            receivedFormData = data
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed — boolean default false should be applied")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+
+        // Verify the default was applied
+        XCTAssertNotNil(receivedFormData, "Should receive form data on submit")
+        if let properties = receivedFormData?.object {
+            XCTAssertEqual(properties["enabled"], .boolean(false), "Boolean default false should be applied")
+        } else {
+            XCTFail("Received form data should be an object")
+        }
+    }
+
+    @MainActor
+    func testSubmitWithEmptyFormDataAndStringDefaultAppliesDefault() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "default": "John"
+                        }
+                    }
+                }
+                """)
+
+        // Start with empty formData
+        var formData = FormData.object(properties: [:])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        var receivedFormData: FormData?
+        controller.onSubmitSuccess = { data in
+            submitSuccessCalled = true
+            receivedFormData = data
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed — string default should be applied")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+
+        // Verify the default was applied
+        if let properties = receivedFormData?.object {
+            XCTAssertEqual(properties["name"], .string("John"), "String default should be applied")
+        } else {
+            XCTFail("Received form data should be an object")
+        }
+    }
+
+    @MainActor
+    func testSubmitWithEmptyFormDataAndDateTimeFieldAppliesDefault() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "required": ["createdAt"],
+                    "properties": {
+                        "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                }
+                """)
+
+        // Start with empty formData
+        var formData = FormData.object(properties: [:])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        var receivedFormData: FormData?
+        controller.onSubmitSuccess = { data in
+            submitSuccessCalled = true
+            receivedFormData = data
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed — empty string default should satisfy required")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+
+        // Verify the default was applied (empty string for date-time without explicit default)
+        if let properties = receivedFormData?.object {
+            XCTAssertNotNil(properties["createdAt"], "DateTime field should be populated")
+        } else {
+            XCTFail("Received form data should be an object")
+        }
+    }
+
+    @MainActor
+    func testLiveValidateWithEmptyFormDataAndDefaultsDoesNotProduceErrors() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "required": ["enabled", "name"],
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "name": {
+                            "type": "string",
+                            "default": "Default Name"
+                        }
+                    }
+                }
+                """)
+
+        // Start with empty formData
+        var formData = FormData.object(properties: [:])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: true,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        // Trigger live validation
+        controller.handleFormDataChange()
+
+        XCTAssertTrue(controller.isValid, "Live validation should pass with defaults applied")
+        XCTAssertTrue(controller.errors.isEmpty, "Should have no errors after defaults applied")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+
+        // Verify defaults were populated in formData
+        if case .object(let properties) = formData {
+            XCTAssertEqual(properties["enabled"], .boolean(false), "Boolean default should be applied")
+            XCTAssertEqual(properties["name"], .string("Default Name"), "String default should be applied")
+        } else {
+            XCTFail("formData should be an object")
+        }
+    }
 }
