@@ -11,7 +11,7 @@ struct ObjectField: Field {
     var required: Bool
     var propertyName: String?
 
-    // Extract properties from schema, using JSON-defined order when available
+    // Extract properties from schema, using ui:order or JSON-defined order when available
     private var properties: OrderedDictionary<String, JSONSchema>? {
         guard case .object = schema.type else {
             return nil
@@ -19,9 +19,15 @@ struct ObjectField: Field {
 
         let dict = schema.objectSchema?.properties ?? [:]
 
-        // Use JSON-defined order if available via uiSchema, otherwise fall back to dictionary iteration order
+        // Priority: 1. ui:order from uiSchema, 2. JSON-defined order, 3. dictionary iteration order
         let orderedKeys: [String]
-        if let orderMap = uiSchema?["__propertyKeyOrder"] as? [String: [String]],
+        if let uiOrder = uiSchema?["ui:order"] as? [String] {
+            // Use ui:order from uiSchema, filtering to keys present in schema
+            // Also append any keys not in ui:order at the end
+            let orderedFromUi = uiOrder.filter { dict.keys.contains($0) }
+            let remainingKeys = dict.keys.filter { !uiOrder.contains($0) }
+            orderedKeys = orderedFromUi + remainingKeys
+        } else if let orderMap = uiSchema?["__propertyKeyOrder"] as? [String: [String]],
             let jsonOrder = orderMap[id]
         {
             // Use the original JSON property order, filtering to keys present in schema
