@@ -10,16 +10,6 @@ struct FormControllerKey: EnvironmentKey {
     static let defaultValue: JSONSchemaFormController? = nil
 }
 
-// MARK: - Property Key Order Environment Key
-
-/// Environment key for passing property key ordering to child views.
-///
-/// Maps field ID paths (e.g. "root", "root_address") to ordered property key arrays
-/// that reflect the original JSON schema property definition order.
-struct PropertyKeyOrderKey: EnvironmentKey {
-    static let defaultValue: [String: [String]]? = nil
-}
-
 extension EnvironmentValues {
     /// The form controller managing the current form's state and validation.
     ///
@@ -34,14 +24,5 @@ extension EnvironmentValues {
     var formController: JSONSchemaFormController? {
         get { self[FormControllerKey.self] }
         set { self[FormControllerKey.self] = newValue }
-    }
-
-    /// Property key ordering extracted from the raw JSON schema.
-    ///
-    /// Maps field ID paths to ordered property key arrays, preserving the
-    /// original JSON property definition order.
-    var propertyKeyOrder: [String: [String]]? {
-        get { self[PropertyKeyOrderKey.self] }
-        set { self[PropertyKeyOrderKey.self] = newValue }
     }
 }

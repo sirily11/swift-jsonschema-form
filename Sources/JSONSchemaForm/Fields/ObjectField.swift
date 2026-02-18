@@ -11,9 +11,6 @@ struct ObjectField: Field {
     var required: Bool
     var propertyName: String?
 
-    /// Property key ordering extracted from the raw JSON schema
-    @Environment(\.propertyKeyOrder) private var propertyKeyOrder
-
     // Extract properties from schema, using JSON-defined order when available
     private var properties: OrderedDictionary<String, JSONSchema>? {
         guard case .object = schema.type else {
@@ -22,9 +19,11 @@ struct ObjectField: Field {
 
         let dict = schema.objectSchema?.properties ?? [:]
 
-        // Use JSON-defined order if available, otherwise fall back to dictionary iteration order
+        // Use JSON-defined order if available via uiSchema, otherwise fall back to dictionary iteration order
         let orderedKeys: [String]
-        if let jsonOrder = propertyKeyOrder?[id] {
+        if let orderMap = uiSchema?["__propertyKeyOrder"] as? [String: [String]],
+            let jsonOrder = orderMap[id]
+        {
             // Use the original JSON property order, filtering to keys present in schema
             orderedKeys = jsonOrder.filter { dict.keys.contains($0) }
         } else {
@@ -94,7 +93,15 @@ struct ObjectField: Field {
     private func propertyView(name: String, schema: JSONSchema) -> some View {
         if case .object = formData.wrappedValue {
             // Get property-specific uiSchema if it exists
-            let propertyUiSchema = uiSchema?[name] as? [String: Any]
+            var propertyUiSchema = uiSchema?[name] as? [String: Any]
+
+            // Propagate property key order to nested object fields
+            if let orderMap = uiSchema?["__propertyKeyOrder"] {
+                if propertyUiSchema == nil {
+                    propertyUiSchema = [:]
+                }
+                propertyUiSchema?["__propertyKeyOrder"] = orderMap
+            }
 
             // Check if property is required
             let isRequired = requiredProperties?.contains(name) ?? false

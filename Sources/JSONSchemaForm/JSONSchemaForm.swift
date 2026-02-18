@@ -90,9 +90,6 @@ public struct JSONSchemaForm: View {
     /// Conditional schemas for if/then/else support (extracted during preprocessing)
     var conditionalSchemas: [ConditionalSchema]?
 
-    /// Property key ordering extracted from raw JSON, preserving original definition order
-    var propertyKeyOrder: [String: [String]]?
-
     /// Callback when form is submitted successfully (legacy callback, prefer using controller)
     var onSubmit: ((Any?) -> Void)?
 
@@ -190,13 +187,21 @@ public struct JSONSchemaForm: View {
         controller: JSONSchemaFormController? = nil
     ) {
         self.schema = schema
-        self.uiSchema = uiSchema
         self.formData = formData
-        self.propertyKeyOrder = schemaJSON.flatMap {
+        self.conditionalSchemas = conditionalSchemas
+
+        // Merge property key order into uiSchema so it flows through the view hierarchy
+        if let order = schemaJSON.flatMap({
             PropertyOrderExtractor.extractPropertyOrder(
                 from: $0, idPrefix: idPrefix, idSeparator: idSeparator)
+        }) {
+            var mergedUiSchema = uiSchema ?? [:]
+            mergedUiSchema["__propertyKeyOrder"] = order
+            self.uiSchema = mergedUiSchema
+        } else {
+            self.uiSchema = uiSchema
         }
-        self.conditionalSchemas = conditionalSchemas
+
         self.onSubmit = onSubmit
         self.onError = onError
         self.formContext = formContext
@@ -234,7 +239,6 @@ public struct JSONSchemaForm: View {
             }
         }
         .environment(\.formController, controller)
-        .environment(\.propertyKeyOrder, propertyKeyOrder)
         .onAppear {
             configureControllerIfNeeded()
         }
