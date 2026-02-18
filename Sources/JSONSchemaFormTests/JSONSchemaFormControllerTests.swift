@@ -621,4 +621,103 @@ class JSONSchemaFormControllerTests: XCTestCase {
         XCTAssertFalse(isValid, "Nested object validation should fail with invalid data")
         XCTAssertFalse(controller.errors.isEmpty, "Should have errors for nested field")
     }
+
+    // MARK: - Default Value Tests
+
+    @MainActor
+    func testSubmitWithDefaultValueProducesNoErrors() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "default": "John"
+                        }
+                    }
+                }
+                """)
+
+        var formData = FormData.object(properties: [
+            "name": .string("John")
+        ])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        controller.onSubmitSuccess = { _ in
+            submitSuccessCalled = true
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed when form data has the default value")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+    }
+
+    // MARK: - Not Required Without Default Tests
+
+    @MainActor
+    func testSubmitWithoutDefaultValueAndNotRequiredProducesNoErrors() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "nickname": {
+                            "type": "string"
+                        }
+                    }
+                }
+                """)
+
+        // Empty form data — the optional field is not provided
+        var formData = FormData.object(properties: [:])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        controller.onSubmitSuccess = { _ in
+            submitSuccessCalled = true
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed when non-required field has no value and no default")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+    }
 }
