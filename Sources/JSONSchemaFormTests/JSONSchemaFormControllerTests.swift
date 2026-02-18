@@ -720,4 +720,67 @@ class JSONSchemaFormControllerTests: XCTestCase {
         XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
         XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
     }
+
+    // MARK: - Boolean Default Value Tests
+
+    @MainActor
+    func testSubmitWithBooleanDefaultFalseProducesNoErrorsAndValueIsSet() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                }
+                """)
+
+        var formData = FormData.object(properties: [
+            "enabled": .boolean(false)
+        ])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        var receivedFormData: FormData?
+        controller.onSubmitSuccess = { data in
+            submitSuccessCalled = true
+            receivedFormData = data
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed when boolean field has default false")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+
+        // Verify the boolean value is set to false in the submitted data
+        if case .object(let properties) = receivedFormData {
+            if case .boolean(let value) = properties["enabled"] {
+                XCTAssertFalse(value, "Boolean field should be set to false")
+            } else {
+                XCTFail("enabled property should be a boolean")
+            }
+        } else {
+            XCTFail("Form data should be an object")
+        }
+    }
 }
