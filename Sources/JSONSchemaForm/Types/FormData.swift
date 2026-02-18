@@ -159,6 +159,39 @@ extension AnyCodable {
 }
 
 extension FormData {
+    /// Returns a new FormData with schema defaults applied for any missing properties.
+    ///
+    /// When formData starts as an empty object, required fields with default values
+    /// in the schema would fail validation. This method walks the schema and populates
+    /// any missing properties using their schema defaults (via `fromSchemaType`).
+    public func applyingDefaults(schema: JSONSchema) -> FormData {
+        switch (self, schema.type) {
+        case (.object(var properties), .object):
+            guard let objectSchema = schema.objectSchema,
+                  let schemaProperties = objectSchema.properties
+            else {
+                return self
+            }
+
+            for (key, propertySchema) in schemaProperties {
+                if properties[key] == nil, propertySchema.defaultValue != nil {
+                    // Property is missing and has an explicit default — populate it
+                    properties[key] = FormData.fromSchemaType(schema: propertySchema)
+                } else if properties[key] == nil, case .object = propertySchema.type {
+                    // Recursively apply defaults for nested objects even without a top-level default
+                    properties[key] = FormData.object(properties: [:]).applyingDefaults(schema: propertySchema)
+                } else if properties[key] != nil, case .object = propertySchema.type {
+                    // Recursively apply defaults for existing nested objects
+                    properties[key] = properties[key]!.applyingDefaults(schema: propertySchema)
+                }
+            }
+
+            return .object(properties: properties)
+        default:
+            return self
+        }
+    }
+
     /// Convert FormData to a dictionary representation for validation
     public func toDictionary() -> Any? {
         switch self {
