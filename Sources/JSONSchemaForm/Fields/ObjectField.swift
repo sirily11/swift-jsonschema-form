@@ -11,16 +11,28 @@ struct ObjectField: Field {
     var required: Bool
     var propertyName: String?
 
-    // Extract properties from schema
+    // Extract properties from schema, using JSON-defined order when available
     private var properties: OrderedDictionary<String, JSONSchema>? {
         guard case .object = schema.type else {
             return nil
         }
 
         let dict = schema.objectSchema?.properties ?? [:]
+
+        // Use JSON-defined order if available via uiSchema, otherwise fall back to dictionary iteration order
+        let orderedKeys: [String]
+        if let orderMap = uiSchema?["__propertyKeyOrder"] as? [String: [String]],
+            let jsonOrder = orderMap[id]
+        {
+            // Use the original JSON property order, filtering to keys present in schema
+            orderedKeys = jsonOrder.filter { dict.keys.contains($0) }
+        } else {
+            orderedKeys = Array(dict.keys)
+        }
+
         var orderedProperties = OrderedDictionary<String, JSONSchema>()
-        for (key, value) in dict {
-            orderedProperties[key] = value
+        for key in orderedKeys {
+            orderedProperties[key] = dict[key]
         }
         return orderedProperties
     }
@@ -76,12 +88,24 @@ struct ObjectField: Field {
         return formData
     }
 
+    /// Computes the uiSchema for a child property, propagating property key order
+    private func childUiSchema(for name: String) -> [String: Any]? {
+        var result = uiSchema?[name] as? [String: Any]
+        if let orderMap = uiSchema?["__propertyKeyOrder"] {
+            if result == nil {
+                result = [:]
+            }
+            result?["__propertyKeyOrder"] = orderMap
+        }
+        return result
+    }
+
     // Render a property field
     @ViewBuilder
     private func propertyView(name: String, schema: JSONSchema) -> some View {
         if case .object = formData.wrappedValue {
-            // Get property-specific uiSchema if it exists
-            let propertyUiSchema = uiSchema?[name] as? [String: Any]
+            // Get property-specific uiSchema with propagated property key order
+            let propertyUiSchema = childUiSchema(for: name)
 
             // Check if property is required
             let isRequired = requiredProperties?.contains(name) ?? false

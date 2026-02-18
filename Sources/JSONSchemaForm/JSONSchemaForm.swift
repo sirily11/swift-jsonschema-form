@@ -150,6 +150,8 @@ public struct JSONSchemaForm: View {
     ///   - schema: The JSON Schema defining the form structure
     ///   - uiSchema: Optional UI schema for customizing field appearance
     ///   - formData: Binding to the form data
+    ///   - schemaJSON: Optional raw JSON schema string. When provided, property key ordering
+    ///     is extracted from the JSON to preserve the original definition order.
     ///   - conditionalSchemas: Pre-extracted conditional schemas for if/then/else support
     ///   - onSubmit: Legacy callback when form is submitted successfully
     ///   - onError: Legacy callback when validation errors occur
@@ -168,6 +170,7 @@ public struct JSONSchemaForm: View {
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
         formData: Binding<FormData>,
+        schemaJSON: String? = nil,
         conditionalSchemas: [ConditionalSchema]? = nil,
         onSubmit: ((Any?) -> Void)? = nil,
         onError: (([FormValidationError]) -> Void)? = nil,
@@ -184,9 +187,21 @@ public struct JSONSchemaForm: View {
         controller: JSONSchemaFormController? = nil
     ) {
         self.schema = schema
-        self.uiSchema = uiSchema
         self.formData = formData
         self.conditionalSchemas = conditionalSchemas
+
+        // Merge property key order into uiSchema so it flows through the view hierarchy
+        if let order = schemaJSON.flatMap({
+            PropertyOrderExtractor.extractPropertyOrder(
+                from: $0, idPrefix: idPrefix, idSeparator: idSeparator)
+        }) {
+            var mergedUiSchema = uiSchema ?? [:]
+            mergedUiSchema["__propertyKeyOrder"] = order
+            self.uiSchema = mergedUiSchema
+        } else {
+            self.uiSchema = uiSchema
+        }
+
         self.onSubmit = onSubmit
         self.onError = onError
         self.formContext = formContext
