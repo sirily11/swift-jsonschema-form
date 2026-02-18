@@ -724,12 +724,13 @@ class JSONSchemaFormControllerTests: XCTestCase {
     // MARK: - Boolean Default Value Tests
 
     @MainActor
-    func testSubmitWithBooleanDefaultFalseProducesNoErrorsAndValueIsSet() async throws {
+    func testSubmitWithBooleanDefaultValueProducesNoErrorsAndValueSetToFalse() async throws {
         let controller = JSONSchemaFormController()
         let schema = try JSONSchema(
             jsonString: """
                 {
                     "type": "object",
+                    "required": ["enabled"],
                     "properties": {
                         "enabled": {
                             "type": "boolean",
@@ -766,21 +767,18 @@ class JSONSchemaFormControllerTests: XCTestCase {
 
         let success = try await controller.submit()
 
-        XCTAssertTrue(success, "Submit should succeed when boolean field has default false")
+        XCTAssertTrue(success, "Submit should succeed when boolean field has default value false")
         XCTAssertTrue(controller.isValid, "Controller should report valid")
         XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
         XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
         XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
 
-        // Verify the boolean value is set to false in the submitted data
-        if case .object(let properties) = receivedFormData {
-            if case .boolean(let value) = properties["enabled"] {
-                XCTAssertFalse(value, "Boolean field should be set to false")
-            } else {
-                XCTFail("enabled property should be a boolean")
-            }
+        // Verify the boolean value is set to false
+        XCTAssertNotNil(receivedFormData, "Should receive form data on submit")
+        if let properties = receivedFormData?.object {
+            XCTAssertEqual(properties["enabled"], .boolean(false), "Boolean value should be false")
         } else {
-            XCTFail("Form data should be an object")
+            XCTFail("Received form data should be an object")
         }
     }
 }
