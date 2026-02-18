@@ -972,7 +972,8 @@ class JSONSchemaFormControllerTests: XCTestCase {
                     "properties": {
                         "createdAt": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "default": "2026-01-01T00:00:00Z"
                         }
                     }
                 }
