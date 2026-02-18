@@ -88,20 +88,24 @@ struct ObjectField: Field {
         return formData
     }
 
+    /// Computes the uiSchema for a child property, propagating property key order
+    private func childUiSchema(for name: String) -> [String: Any]? {
+        var result = uiSchema?[name] as? [String: Any]
+        if let orderMap = uiSchema?["__propertyKeyOrder"] {
+            if result == nil {
+                result = [:]
+            }
+            result?["__propertyKeyOrder"] = orderMap
+        }
+        return result
+    }
+
     // Render a property field
     @ViewBuilder
     private func propertyView(name: String, schema: JSONSchema) -> some View {
         if case .object = formData.wrappedValue {
-            // Get property-specific uiSchema if it exists
-            var propertyUiSchema = uiSchema?[name] as? [String: Any]
-
-            // Propagate property key order to nested object fields
-            if let orderMap = uiSchema?["__propertyKeyOrder"] {
-                if propertyUiSchema == nil {
-                    propertyUiSchema = [:]
-                }
-                propertyUiSchema?["__propertyKeyOrder"] = orderMap
-            }
+            // Get property-specific uiSchema with propagated property key order
+            let propertyUiSchema = childUiSchema(for: name)
 
             // Check if property is required
             let isRequired = requiredProperties?.contains(name) ?? false
