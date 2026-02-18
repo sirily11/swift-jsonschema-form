@@ -342,64 +342,65 @@ public struct JSONSchemaForm: View {
             "decimal_precision": .number(2),
         ])
 
+        let schemaJSON = """
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "initial_capital",
+                "broker",
+                "decimal_precision"
+              ],
+              "properties": {
+                "initial_capital": {
+                  "type": "number",
+                  "minimum": 0,
+                  "title": "Initial Capital",
+                  "description": "Starting capital for the backtest in USD"
+                },
+                "broker": {
+                  "type": "string",
+                  "title": "Broker",
+                  "description": "The broker to use for commission calculations"
+                },
+                "start_time": {
+                  "type": "array",
+                  "title": "Start Time",
+                  "description": "Optional start time for the backtest period",
+                  "items": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "end_time": {
+                  "type": "array",
+                  "title": "End Time",
+                  "description": "Optional end time for the backtest period",
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "decimal_precision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "title": "Decimal Precision",
+                  "description": "The number of decimal places allowed for quantity",
+                  "default": 1
+                }
+              }
+            }
+            """
+
         var body: some View {
-            if let schema = try? JSONSchema(
-                jsonString: """
-                    {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": [
-                        "initial_capital",
-                        "broker",
-                        "decimal_precision"
-                      ],
-                      "properties": {
-                        "initial_capital": {
-                          "type": "number",
-                          "minimum": 0,
-                          "title": "Initial Capital",
-                          "description": "Starting capital for the backtest in USD"
-                        },
-                        "broker": {
-                          "type": "string",
-                          "title": "Broker",
-                          "description": "The broker to use for commission calculations"
-                        },
-                        "start_time": {
-                          "type": "array",
-                          "title": "Start Time",
-                          "description": "Optional start time for the backtest period",
-                          "items": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        },
-                        "end_time": {
-                          "type": "array",
-                          "title": "End Time",
-                          "description": "Optional end time for the backtest period",
-                          "items": {
-                            "type": "string",
-                            "format": "date"
-                          }
-                        },
-                        "decimal_precision": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "title": "Decimal Precision",
-                          "description": "The number of decimal places allowed for quantity",
-                          "default": 1
-                        }
-                      }
-                    }
-                    """
-            ) {
+            if let schema = try? JSONSchema(jsonString: schemaJSON) {
                 Form {
                     Section("Settings") {
                         JSONSchemaForm(
                             schema: schema,
                             formData: $formData,
+                            schemaJSON: schemaJSON,
                             showSubmitButton: false
                         )
                     }
@@ -587,3 +588,79 @@ public struct JSONSchemaForm: View {
 
     return ControllerPreviewWrapper()
 }
+#Preview("Form with ui:order") {
+    struct UIOrderPreviewWrapper: View {
+        @State private var formData = FormData.object(properties: [
+            "ticker": .string("AAPL"),
+            "startDate": .string("2024-01-01"),
+            "endDate": .string("2024-12-31"),
+            "interval": .string("1d"),
+            "apiKey": .string("secret-key-123"),
+        ])
+
+        let schemaJSON = """
+            {
+              "type": "object",
+              "required": ["ticker", "startDate", "endDate", "interval", "apiKey"],
+              "properties": {
+                "apiKey": {
+                  "type": "string",
+                  "title": "API Key",
+                  "description": "Your API key for data access"
+                },
+                "ticker": {
+                  "type": "string",
+                  "title": "Ticker Symbol",
+                  "description": "Stock ticker symbol (e.g., AAPL)"
+                },
+                "startDate": {
+                  "type": "string",
+                  "title": "Start Date",
+                  "description": "Start date for historical data"
+                },
+                "endDate": {
+                  "type": "string",
+                  "title": "End Date",
+                  "description": "End date for historical data"
+                },
+                "interval": {
+                  "type": "string",
+                  "title": "Interval",
+                  "description": "Data interval (e.g., 1d, 1h, 15m)"
+                }
+              }
+            }
+            """
+
+        // ui:order reorders fields: ticker first, dates, interval, then apiKey last
+        let uiSchema: [String: Any] = [
+            "apiKey": ["ui:widget": "password"],
+            "ui:order": ["ticker", "startDate", "endDate", "interval", "apiKey"]
+        ]
+
+        var body: some View {
+            if let schema = try? JSONSchema(jsonString: schemaJSON) {
+                NavigationStack {
+                    Form {
+                        Section("Stock Data Query") {
+                            JSONSchemaForm(
+                                schema: schema,
+                                uiSchema: uiSchema,
+                                formData: $formData,
+                                schemaJSON: schemaJSON,
+                                showSubmitButton: false
+                            )
+                        }
+                    }
+                    .formStyle(.grouped)
+                    .navigationTitle("ui:order Demo")
+                }
+            } else {
+                Text("Failed to parse schema")
+            }
+        }
+    }
+
+    return UIOrderPreviewWrapper()
+}
+

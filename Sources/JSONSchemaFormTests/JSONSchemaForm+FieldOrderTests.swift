@@ -248,4 +248,139 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
             updatedValues, ["updated zebra", "apple", "mango"],
             "Field order should remain stable after form data update. Got: \(updatedValues)")
     }
+
+    // MARK: - ui:order Tests
+
+    @MainActor
+    func testUIOrderOverridesJSONOrder() async throws {
+        // Test that ui:order from uiSchema takes precedence over JSON definition order
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "zebra": { "type": "string" },
+                    "apple": { "type": "string" },
+                    "mango": { "type": "string" }
+                }
+            }
+            """
+        let formData = FormData.object(properties: [
+            "zebra": .string("zebra"),
+            "apple": .string("apple"),
+            "mango": .string("mango"),
+        ])
+        let schema = try JSONSchema(jsonString: schemaJSON)
+
+        // ui:order specifies a different order: apple, mango, zebra
+        let uiSchema: [String: Any] = [
+            "ui:order": ["apple", "mango", "zebra"]
+        ]
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(
+            schema: schema,
+            uiSchema: uiSchema,
+            formData: data,
+            schemaJSON: schemaJSON
+        )
+
+        let textFields = try form.inspect().findAll(ViewType.TextField.self)
+        let fieldValues = try textFields.map { try $0.input() }
+
+        // Fields should follow ui:order: apple, mango, zebra
+        let expectedOrder = ["apple", "mango", "zebra"]
+        XCTAssertEqual(
+            fieldValues, expectedOrder,
+            "ui:order should override JSON definition order. Got: \(fieldValues)")
+    }
+
+    @MainActor
+    func testUIOrderWithPartialKeys() async throws {
+        // Test that ui:order works with partial keys (remaining keys appended at end)
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "zebra": { "type": "string" },
+                    "apple": { "type": "string" },
+                    "mango": { "type": "string" },
+                    "banana": { "type": "string" }
+                }
+            }
+            """
+        let formData = FormData.object(properties: [
+            "zebra": .string("zebra"),
+            "apple": .string("apple"),
+            "mango": .string("mango"),
+            "banana": .string("banana"),
+        ])
+        let schema = try JSONSchema(jsonString: schemaJSON)
+
+        // ui:order only specifies some keys
+        let uiSchema: [String: Any] = [
+            "ui:order": ["mango", "apple"]
+        ]
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(
+            schema: schema,
+            uiSchema: uiSchema,
+            formData: data,
+            schemaJSON: schemaJSON
+        )
+
+        let textFields = try form.inspect().findAll(ViewType.TextField.self)
+        let fieldValues = try textFields.map { try $0.input() }
+
+        // ui:order keys first (mango, apple), then remaining keys
+        XCTAssertEqual(fieldValues[0], "mango", "First field should be mango per ui:order")
+        XCTAssertEqual(fieldValues[1], "apple", "Second field should be apple per ui:order")
+        // Remaining fields (zebra, banana) should appear after, order may vary
+        XCTAssertTrue(
+            fieldValues.contains("zebra") && fieldValues.contains("banana"),
+            "Remaining fields should be present")
+    }
+
+    @MainActor
+    func testUIOrderIgnoresNonexistentKeys() async throws {
+        // Test that ui:order silently ignores keys not present in schema
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "zebra": { "type": "string" },
+                    "apple": { "type": "string" }
+                }
+            }
+            """
+        let formData = FormData.object(properties: [
+            "zebra": .string("zebra"),
+            "apple": .string("apple"),
+        ])
+        let schema = try JSONSchema(jsonString: schemaJSON)
+
+        // ui:order includes a nonexistent key "nonexistent"
+        let uiSchema: [String: Any] = [
+            "ui:order": ["apple", "nonexistent", "zebra"]
+        ]
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(
+            schema: schema,
+            uiSchema: uiSchema,
+            formData: data,
+            schemaJSON: schemaJSON
+        )
+
+        let textFields = try form.inspect().findAll(ViewType.TextField.self)
+        XCTAssertEqual(textFields.count, 2, "Should have 2 text fields")
+
+        let fieldValues = try textFields.map { try $0.input() }
+
+        // Fields should follow ui:order (ignoring nonexistent): apple, zebra
+        let expectedOrder = ["apple", "zebra"]
+        XCTAssertEqual(
+            fieldValues, expectedOrder,
+            "ui:order should ignore nonexistent keys. Got: \(fieldValues)")
+    }
 }
