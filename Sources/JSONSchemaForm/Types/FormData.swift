@@ -174,11 +174,14 @@ extension FormData {
             }
 
             for (key, propertySchema) in schemaProperties {
-                if properties[key] == nil {
-                    // Property is missing — populate from schema default
+                if properties[key] == nil, propertySchema.defaultValue != nil {
+                    // Property is missing and has an explicit default — populate it
                     properties[key] = FormData.fromSchemaType(schema: propertySchema)
-                } else if case .object = propertySchema.type {
-                    // Recursively apply defaults for nested objects
+                } else if properties[key] == nil, case .object = propertySchema.type {
+                    // Recursively apply defaults for nested objects even without a top-level default
+                    properties[key] = FormData.object(properties: [:]).applyingDefaults(schema: propertySchema)
+                } else if properties[key] != nil, case .object = propertySchema.type {
+                    // Recursively apply defaults for existing nested objects
                     properties[key] = properties[key]!.applyingDefaults(schema: propertySchema)
                 }
             }
