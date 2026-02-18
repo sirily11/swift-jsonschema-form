@@ -781,4 +781,66 @@ class JSONSchemaFormControllerTests: XCTestCase {
             XCTFail("Received form data should be an object")
         }
     }
+
+    // MARK: - DateTime Field Tests
+
+    @MainActor
+    func testSubmitWithDateTimeFieldProducesNoErrorsAndValueIsPreserved() async throws {
+        let controller = JSONSchemaFormController()
+        let schema = try JSONSchema(
+            jsonString: """
+                {
+                    "type": "object",
+                    "required": ["createdAt"],
+                    "properties": {
+                        "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                }
+                """)
+
+        let dateTimeValue = "2026-02-18T09:00:00Z"
+        var formData = FormData.object(properties: [
+            "createdAt": .string(dateTimeValue)
+        ])
+        let binding = Binding(get: { formData }, set: { formData = $0 })
+
+        var submitSuccessCalled = false
+        var receivedFormData: FormData?
+        controller.onSubmitSuccess = { data in
+            submitSuccessCalled = true
+            receivedFormData = data
+        }
+
+        var validationErrorCalled = false
+        controller.onValidationError = { _ in
+            validationErrorCalled = true
+        }
+
+        controller.configure(
+            schema: schema,
+            formData: binding,
+            liveValidate: false,
+            customValidate: nil,
+            transformErrors: nil
+        )
+
+        let success = try await controller.submit()
+
+        XCTAssertTrue(success, "Submit should succeed when datetime field has a valid value")
+        XCTAssertTrue(controller.isValid, "Controller should report valid")
+        XCTAssertTrue(controller.errors.isEmpty, "Controller should have no errors")
+        XCTAssertTrue(submitSuccessCalled, "onSubmitSuccess should be called")
+        XCTAssertFalse(validationErrorCalled, "onValidationError should not be called")
+
+        // Verify the datetime value is preserved
+        XCTAssertNotNil(receivedFormData, "Should receive form data on submit")
+        if let properties = receivedFormData?.object {
+            XCTAssertEqual(properties["createdAt"], .string(dateTimeValue), "DateTime value should be preserved")
+        } else {
+            XCTFail("Received form data should be an object")
+        }
+    }
 }
