@@ -90,6 +90,9 @@ public struct JSONSchemaForm: View {
     /// Conditional schemas for if/then/else support (extracted during preprocessing)
     var conditionalSchemas: [ConditionalSchema]?
 
+    /// Property key ordering extracted from raw JSON, preserving original definition order
+    var propertyKeyOrder: [String: [String]]?
+
     /// Callback when form is submitted successfully (legacy callback, prefer using controller)
     var onSubmit: ((Any?) -> Void)?
 
@@ -150,6 +153,8 @@ public struct JSONSchemaForm: View {
     ///   - schema: The JSON Schema defining the form structure
     ///   - uiSchema: Optional UI schema for customizing field appearance
     ///   - formData: Binding to the form data
+    ///   - schemaJSON: Optional raw JSON schema string. When provided, property key ordering
+    ///     is extracted from the JSON to preserve the original definition order.
     ///   - conditionalSchemas: Pre-extracted conditional schemas for if/then/else support
     ///   - onSubmit: Legacy callback when form is submitted successfully
     ///   - onError: Legacy callback when validation errors occur
@@ -168,6 +173,7 @@ public struct JSONSchemaForm: View {
         schema: JSONSchema,
         uiSchema: [String: Any]? = nil,
         formData: Binding<FormData>,
+        schemaJSON: String? = nil,
         conditionalSchemas: [ConditionalSchema]? = nil,
         onSubmit: ((Any?) -> Void)? = nil,
         onError: (([FormValidationError]) -> Void)? = nil,
@@ -186,6 +192,10 @@ public struct JSONSchemaForm: View {
         self.schema = schema
         self.uiSchema = uiSchema
         self.formData = formData
+        self.propertyKeyOrder = schemaJSON.flatMap {
+            PropertyOrderExtractor.extractPropertyOrder(
+                from: $0, idPrefix: idPrefix, idSeparator: idSeparator)
+        }
         self.conditionalSchemas = conditionalSchemas
         self.onSubmit = onSubmit
         self.onError = onError
@@ -224,6 +234,7 @@ public struct JSONSchemaForm: View {
             }
         }
         .environment(\.formController, controller)
+        .environment(\.propertyKeyOrder, propertyKeyOrder)
         .onAppear {
             configureControllerIfNeeded()
         }

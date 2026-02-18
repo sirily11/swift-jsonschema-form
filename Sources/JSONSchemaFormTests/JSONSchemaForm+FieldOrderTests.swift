@@ -10,28 +10,28 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
     // MARK: - ObjectField Order Tests
 
     @MainActor
-    func testObjectFieldsSortedAlphabetically() async throws {
-        // Schema with properties in non-alphabetical order: zebra, apple, mango
-        // Fields should be rendered in alphabetical order: apple, mango, zebra
+    func testObjectFieldsPreserveJSONOrder() async throws {
+        // Schema with properties in specific order: zebra, apple, mango
+        // Fields should be rendered in the original JSON definition order
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "zebra": { "type": "string" },
+                    "apple": { "type": "string" },
+                    "mango": { "type": "string" }
+                }
+            }
+            """
         let formData = FormData.object(properties: [
             "zebra": .string("zebra value"),
             "apple": .string("apple value"),
-            "mango": .string("mango value")
+            "mango": .string("mango value"),
         ])
-        let schema = try JSONSchema(
-            jsonString: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "zebra": { "type": "string" },
-                        "apple": { "type": "string" },
-                        "mango": { "type": "string" }
-                    }
-                }
-                """)
+        let schema = try JSONSchema(jsonString: schemaJSON)
 
         let data = Binding(wrappedValue: formData)
-        let form = JSONSchemaForm(schema: schema, formData: data)
+        let form = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
 
         // Find all text fields
         let textFields = try form.inspect().findAll(ViewType.TextField.self)
@@ -40,35 +40,35 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
         // Get the inputs (values) to identify field order
         let fieldValues = try textFields.map { try $0.input() }
 
-        // Fields should be in alphabetical order by property name
-        let alphabeticalOrder = ["apple value", "mango value", "zebra value"]
+        // Fields should be in the original JSON definition order: zebra, apple, mango
+        let expectedOrder = ["zebra value", "apple value", "mango value"]
         XCTAssertEqual(
-            fieldValues, alphabeticalOrder,
-            "Fields should be sorted alphabetically. Got: \(fieldValues)")
+            fieldValues, expectedOrder,
+            "Fields should preserve original JSON order. Got: \(fieldValues)")
     }
 
     @MainActor
-    func testObjectFieldsPreserveAlphabeticalOrder() async throws {
-        // This test verifies that fields maintain consistent alphabetical order
+    func testObjectFieldsPreserveConsistentOrder() async throws {
+        // This test verifies that fields maintain consistent order
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "first": { "type": "string" },
+                    "second": { "type": "string" },
+                    "third": { "type": "string" }
+                }
+            }
+            """
         let formData = FormData.object(properties: [
             "first": .string("1"),
             "second": .string("2"),
-            "third": .string("3")
+            "third": .string("3"),
         ])
-        let schema = try JSONSchema(
-            jsonString: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "first": { "type": "string" },
-                        "second": { "type": "string" },
-                        "third": { "type": "string" }
-                    }
-                }
-                """)
+        let schema = try JSONSchema(jsonString: schemaJSON)
 
         let data = Binding(wrappedValue: formData)
-        let form = JSONSchemaForm(schema: schema, formData: data)
+        let form = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
 
         // Find all fields by their IDs
         let firstField = try form.inspect().find(viewWithId: "root_first")
@@ -80,41 +80,42 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
         XCTAssertNoThrow(try secondField.find(ViewType.TextField.self))
         XCTAssertNoThrow(try thirdField.find(ViewType.TextField.self))
 
-        // Verify alphabetical order: first, second, third
+        // Verify JSON definition order: first, second, third
         let textFields = try form.inspect().findAll(ViewType.TextField.self)
         let fieldValues = try textFields.map { try $0.input() }
-        XCTAssertEqual(fieldValues, ["1", "2", "3"],
-            "Fields should be in alphabetical order. Got: \(fieldValues)")
+        XCTAssertEqual(
+            fieldValues, ["1", "2", "3"],
+            "Fields should be in JSON definition order. Got: \(fieldValues)")
     }
 
     @MainActor
-    func testNestedObjectFieldsSortedAlphabetically() async throws {
+    func testNestedObjectFieldsPreserveJSONOrder() async throws {
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "parent": {
+                        "type": "object",
+                        "properties": {
+                            "zebra": { "type": "string" },
+                            "apple": { "type": "string" },
+                            "mango": { "type": "string" }
+                        }
+                    }
+                }
+            }
+            """
         let formData = FormData.object(properties: [
             "parent": .object(properties: [
                 "zebra": .string("zebra"),
                 "apple": .string("apple"),
-                "mango": .string("mango")
+                "mango": .string("mango"),
             ])
         ])
-        let schema = try JSONSchema(
-            jsonString: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "parent": {
-                            "type": "object",
-                            "properties": {
-                                "zebra": { "type": "string" },
-                                "apple": { "type": "string" },
-                                "mango": { "type": "string" }
-                            }
-                        }
-                    }
-                }
-                """)
+        let schema = try JSONSchema(jsonString: schemaJSON)
 
         let data = Binding(wrappedValue: formData)
-        let form = JSONSchemaForm(schema: schema, formData: data)
+        let form = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
 
         // Find nested text fields
         let textFields = try form.inspect().findAll(ViewType.TextField.self)
@@ -123,35 +124,35 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
         // Get the inputs to verify order
         let fieldValues = try textFields.map { try $0.input() }
 
-        // Verify fields are in alphabetical order
-        let alphabeticalOrder = ["apple", "mango", "zebra"]
+        // Verify fields are in original JSON definition order
+        let expectedOrder = ["zebra", "apple", "mango"]
         XCTAssertEqual(
-            fieldValues, alphabeticalOrder,
-            "Nested fields should be sorted alphabetically. Got: \(fieldValues)")
+            fieldValues, expectedOrder,
+            "Nested fields should preserve JSON order. Got: \(fieldValues)")
     }
 
     @MainActor
-    func testMixedTypeFieldsSortedAlphabetically() async throws {
-        // Test with different field types to ensure alphabetical sorting works for mixed types
+    func testMixedTypeFieldsWithJSONOrder() async throws {
+        // Test with different field types to ensure JSON order is preserved
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "zoo": { "type": "string" },
+                    "active": { "type": "boolean" },
+                    "count": { "type": "number" }
+                }
+            }
+            """
         let formData = FormData.object(properties: [
             "zoo": .string("zoo"),
             "active": .boolean(true),
-            "count": .number(42)
+            "count": .number(42),
         ])
-        let schema = try JSONSchema(
-            jsonString: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "zoo": { "type": "string" },
-                        "active": { "type": "boolean" },
-                        "count": { "type": "number" }
-                    }
-                }
-                """)
+        let schema = try JSONSchema(jsonString: schemaJSON)
 
         let data = Binding(wrappedValue: formData)
-        let form = JSONSchemaForm(schema: schema, formData: data)
+        let form = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
 
         // Find the fields by ID to verify they exist
         let zooField = try form.inspect().find(viewWithId: "root_zoo")
@@ -167,81 +168,84 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
     // MARK: - Regression Test for Stable Ordering
 
     @MainActor
-    func testFieldOrderIsAlphabeticalRegression() async throws {
-        // Regression test to ensure fields are always rendered in alphabetical order
+    func testFieldOrderPreservesJSONDefinitionOrder() async throws {
+        // Regression test to ensure fields always use original JSON definition order
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "z_last": { "type": "string" },
+                    "a_first": { "type": "string" },
+                    "m_middle": { "type": "string" }
+                }
+            }
+            """
         let formData = FormData.object(properties: [
             "z_last": .string("last"),
             "a_first": .string("first"),
-            "m_middle": .string("middle")
+            "m_middle": .string("middle"),
         ])
-        let schema = try JSONSchema(
-            jsonString: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "z_last": { "type": "string" },
-                        "a_first": { "type": "string" },
-                        "m_middle": { "type": "string" }
-                    }
-                }
-                """)
+        let schema = try JSONSchema(jsonString: schemaJSON)
 
         let data = Binding(wrappedValue: formData)
-        let form = JSONSchemaForm(schema: schema, formData: data)
+        let form = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
 
         let textFields = try form.inspect().findAll(ViewType.TextField.self)
         let fieldValues = try textFields.map { try $0.input() }
 
-        // Fields should be sorted alphabetically by property name: a_first, m_middle, z_last
-        let alphabeticallyOrderedValues = ["first", "middle", "last"]
+        // Fields should be in JSON definition order: z_last, a_first, m_middle
+        // NOT alphabetical (a_first, m_middle, z_last)
+        let expectedOrder = ["last", "first", "middle"]
         XCTAssertEqual(
-            fieldValues, alphabeticallyOrderedValues,
-            "Fields should be sorted alphabetically. Got: \(fieldValues)")
+            fieldValues, expectedOrder,
+            "Fields should preserve JSON definition order, not alphabetical. Got: \(fieldValues)")
     }
 
     @MainActor
     func testFieldOrderStableAfterFormDataUpdate() async throws {
         // Verify that field order does not change after updating form data values
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "zebra": { "type": "string" },
+                    "apple": { "type": "string" },
+                    "mango": { "type": "string" }
+                }
+            }
+            """
         var formData = FormData.object(properties: [
             "zebra": .string("zebra"),
             "apple": .string("apple"),
-            "mango": .string("mango")
+            "mango": .string("mango"),
         ])
-        let schema = try JSONSchema(
-            jsonString: """
-                {
-                    "type": "object",
-                    "properties": {
-                        "zebra": { "type": "string" },
-                        "apple": { "type": "string" },
-                        "mango": { "type": "string" }
-                    }
-                }
-                """)
+        let schema = try JSONSchema(jsonString: schemaJSON)
 
         let data = Binding(get: { formData }, set: { formData = $0 })
-        let form = JSONSchemaForm(schema: schema, formData: data)
+        let form = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
 
         // Get initial order
         let initialTextFields = try form.inspect().findAll(ViewType.TextField.self)
         let initialValues = try initialTextFields.map { try $0.input() }
-        XCTAssertEqual(initialValues, ["apple", "mango", "zebra"],
-            "Initial order should be alphabetical")
+        XCTAssertEqual(
+            initialValues, ["zebra", "apple", "mango"],
+            "Initial order should match JSON definition order")
 
         // Simulate a form data update (e.g., user edits the "zebra" field)
         formData = FormData.object(properties: [
             "zebra": .string("updated zebra"),
             "apple": .string("apple"),
-            "mango": .string("mango")
+            "mango": .string("mango"),
         ])
 
         // Re-inspect the form with updated data
-        let updatedForm = JSONSchemaForm(schema: schema, formData: data)
+        let updatedForm = JSONSchemaForm(schema: schema, formData: data, schemaJSON: schemaJSON)
         let updatedTextFields = try updatedForm.inspect().findAll(ViewType.TextField.self)
         let updatedValues = try updatedTextFields.map { try $0.input() }
 
-        // Order should remain alphabetical after update
-        XCTAssertEqual(updatedValues, ["apple", "mango", "updated zebra"],
-            "Field order should remain alphabetical after form data update. Got: \(updatedValues)")
+        // Order should remain the same after update
+        XCTAssertEqual(
+            updatedValues, ["updated zebra", "apple", "mango"],
+            "Field order should remain stable after form data update. Got: \(updatedValues)")
     }
 }
