@@ -11,7 +11,7 @@ struct ObjectField: Field {
     var required: Bool
     var propertyName: String?
 
-    // Extract properties from schema
+    // Extract properties from schema, sorted alphabetically for stable ordering
     private var properties: OrderedDictionary<String, JSONSchema>? {
         guard case .object = schema.type else {
             return nil
@@ -19,8 +19,8 @@ struct ObjectField: Field {
 
         let dict = schema.objectSchema?.properties ?? [:]
         var orderedProperties = OrderedDictionary<String, JSONSchema>()
-        for (key, value) in dict {
-            orderedProperties[key] = value
+        for key in dict.keys.sorted() {
+            orderedProperties[key] = dict[key]
         }
         return orderedProperties
     }
