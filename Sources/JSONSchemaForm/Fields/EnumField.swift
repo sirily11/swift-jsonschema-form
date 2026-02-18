@@ -34,7 +34,7 @@ struct EnumField: Field {
     // Get enum values from schema
     private var enumValues: [EnumValue] {
         if let enumSchema = schema.enumSchema {
-            return createEnumValues(values: enumSchema.values)
+            return Self.createEnumValues(values: enumSchema.values)
         }
         return []
     }
@@ -53,10 +53,19 @@ struct EnumField: Field {
         self.formData = formData
         self.required = required
         self.propertyName = propertyName
+
+        // Initialize selection from formData if a matching enum value exists
+        let options: [EnumValue]
+        if let enumSchema = schema.enumSchema {
+            options = Self.createEnumValues(values: enumSchema.values)
+        } else {
+            options = []
+        }
+        self._value = State(initialValue: Self.findMatchingEnumValue(formData: formData.wrappedValue, options: options))
     }
 
     // Helper to convert JSONSchema.Value to EnumValue with custom labels
-    private func createEnumValues(values: [JSONSchema.EnumSchema.Value]) -> [EnumValue] {
+    private static func createEnumValues(values: [JSONSchema.EnumSchema.Value]) -> [EnumValue] {
         return values.enumerated().map { _, value in
             let stringValue: String
             let rawValue: Any
@@ -81,6 +90,22 @@ struct EnumField: Field {
 
             return EnumValue(value: rawValue, displayName: stringValue)
         }
+    }
+
+    /// Match the current formData value against available enum options
+    private static func findMatchingEnumValue(formData: FormData, options: [EnumValue]) -> EnumValue {
+        let displayName: String
+        switch formData {
+        case .string(let str):
+            displayName = str
+        case .number(let num):
+            displayName = "\(num)"
+        case .boolean(let bool):
+            displayName = bool ? "Yes" : "No"
+        default:
+            return .emptyEnum
+        }
+        return options.first { $0.displayName == displayName } ?? .emptyEnum
     }
 
     // Function to check if an option should be disabled
@@ -246,4 +271,54 @@ private struct RadioWidget: View {
 
         return false
     }
+}
+
+// MARK: - Previews
+
+#Preview("Enum Picker") {
+    @Previewable @State var formData: FormData = .string("10s")
+
+    let schema = JSONSchema.enum(values: [.string("1s"), .string("10s"), .string("30s")])
+
+    EnumField(
+        schema: schema,
+        uiSchema: nil,
+        id: "root_interval",
+        formData: $formData,
+        required: false,
+        propertyName: "interval"
+    )
+    .padding()
+}
+
+#Preview("Enum Picker - Empty") {
+    @Previewable @State var formData: FormData = .null
+
+    let schema = JSONSchema.enum(values: [.string("1s"), .string("10s"), .string("30s")])
+
+    EnumField(
+        schema: schema,
+        uiSchema: nil,
+        id: "root_interval",
+        formData: $formData,
+        required: true,
+        propertyName: "interval"
+    )
+    .padding()
+}
+
+#Preview("Enum Radio") {
+    @Previewable @State var formData: FormData = .string("10s")
+
+    let schema = JSONSchema.enum(values: [.string("1s"), .string("10s"), .string("30s")])
+
+    EnumField(
+        schema: schema,
+        uiSchema: ["ui:widget": "radio"],
+        id: "root_interval",
+        formData: $formData,
+        required: false,
+        propertyName: "interval"
+    )
+    .padding()
 }
