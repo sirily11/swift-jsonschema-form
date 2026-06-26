@@ -31,10 +31,15 @@ struct EnumField: Field {
         return nil
     }
 
+    private var enumNames: [String]? {
+        guard let names = uiSchema?["ui:enumNames"] as? [String] else { return nil }
+        return names
+    }
+
     // Get enum values from schema
     private var enumValues: [EnumValue] {
         if let enumSchema = schema.enumSchema {
-            return Self.createEnumValues(values: enumSchema.values)
+            return Self.createEnumValues(values: enumSchema.values, names: enumNames)
         }
         return []
     }
@@ -57,7 +62,8 @@ struct EnumField: Field {
         // Initialize selection from formData if a matching enum value exists
         let options: [EnumValue]
         if let enumSchema = schema.enumSchema {
-            options = Self.createEnumValues(values: enumSchema.values)
+            let enumNames = uiSchema?["ui:enumNames"] as? [String]
+            options = Self.createEnumValues(values: enumSchema.values, names: enumNames)
         } else {
             options = []
         }
@@ -65,8 +71,8 @@ struct EnumField: Field {
     }
 
     // Helper to convert JSONSchema.Value to EnumValue with custom labels
-    private static func createEnumValues(values: [JSONSchema.EnumSchema.Value]) -> [EnumValue] {
-        return values.enumerated().map { _, value in
+    private static func createEnumValues(values: [JSONSchema.EnumSchema.Value], names: [String]? = nil) -> [EnumValue] {
+        return values.enumerated().map { index, value in
             let stringValue: String
             let rawValue: Any
 
@@ -88,24 +94,51 @@ struct EnumField: Field {
                 rawValue = Any?.none as Any
             }
 
-            return EnumValue(value: rawValue, displayName: stringValue)
+            let displayName: String
+            if let names, names.indices.contains(index), !names[index].isEmpty {
+                displayName = names[index]
+            } else {
+                displayName = stringValue
+            }
+            return EnumValue(value: rawValue, displayName: displayName)
         }
     }
 
     /// Match the current formData value against available enum options
     private static func findMatchingEnumValue(formData: FormData, options: [EnumValue]) -> EnumValue {
-        let displayName: String
+        let rawValue: Any
         switch formData {
         case .string(let str):
-            displayName = str
+            rawValue = str
         case .number(let num):
-            displayName = "\(num)"
+            rawValue = num
         case .boolean(let bool):
-            displayName = bool ? "Yes" : "No"
+            rawValue = bool
         default:
             return .emptyEnum
         }
-        return options.first { $0.displayName == displayName } ?? .emptyEnum
+        return options.first { valuesEqual($0.value, rawValue) } ?? .emptyEnum
+    }
+
+    private static func valuesEqual(_ lhs: Any?, _ rhs: Any?) -> Bool {
+        switch (lhs, rhs) {
+        case let (left as String, right as String):
+            return left == right
+        case let (left as Double, right as Double):
+            return left == right
+        case let (left as Int, right as Int):
+            return left == right
+        case let (left as Int, right as Double):
+            return Double(left) == right
+        case let (left as Double, right as Int):
+            return left == Double(right)
+        case let (left as Bool, right as Bool):
+            return left == right
+        case (nil, nil):
+            return true
+        default:
+            return false
+        }
     }
 
     // Function to check if an option should be disabled
@@ -192,8 +225,13 @@ private struct PickerWidget: Field {
                 Picker(
                     selection: selection
                 ) {
-                    Text("")
-                        .tag(EnumValue.emptyEnum)
+                    // Required enums must not offer an empty/null choice. Keep the
+                    // empty row only when optional, or when the current value is
+                    // unset (so the Picker still has a matching tag to show).
+                    if !required || selection.wrappedValue == .emptyEnum {
+                        Text("")
+                            .tag(EnumValue.emptyEnum)
+                    }
 
                     ForEach(options) { option in
                         Text(option.displayName)

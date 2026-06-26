@@ -1,0 +1,4 @@
+module JSONSchemaForm {
+header "JSONSchemaForm-Swift.h"
+export *
+}

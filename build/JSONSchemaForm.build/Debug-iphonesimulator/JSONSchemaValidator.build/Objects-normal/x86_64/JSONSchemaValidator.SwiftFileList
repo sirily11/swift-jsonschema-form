@@ -1,0 +1,11 @@
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/JSONSchemaValidating.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/JSONSchemaValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/ValidationError.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/ArrayValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/CombinatorsValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/EnumValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/FormatValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/NumberValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/ObjectValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/StringValidator.swift
+/Users/qiweili/Desktop/rxlab/swift-jsonschema-form/Sources/JSONSchemaValidator/Validators/TypeValidator.swift

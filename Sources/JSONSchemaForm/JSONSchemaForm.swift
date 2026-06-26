@@ -120,6 +120,13 @@ public struct JSONSchemaForm: View {
     /// Additional custom validation function
     var customValidate: ((Any?, inout [String: Any]) -> Void)?
 
+    /// Custom widgets keyed by `ui:widget`.
+    var widgets: [String: JSONSchemaFormWidget]
+
+    /// Custom object/field templates (rjsf-style), selected per-field via
+    /// `ui:objectTemplate` / `ui:fieldTemplate` names, with optional defaults.
+    var templates: JSONSchemaFormTemplates
+
     /// String prefix for field IDs
     var idPrefix: String = "root"
 
@@ -163,6 +170,7 @@ public struct JSONSchemaForm: View {
     ///   - disabled: Whether the form is disabled (default: false)
     ///   - readonly: Whether the form is read-only (default: false)
     ///   - customValidate: Additional custom validation function
+    ///   - widgets: Custom widgets keyed by `ui:widget`
     ///   - idPrefix: Prefix for field IDs (default: "root")
     ///   - idSeparator: Separator for field IDs (default: "_")
     ///   - controller: Optional controller for programmatic form control
@@ -182,6 +190,8 @@ public struct JSONSchemaForm: View {
         disabled: Bool = false,
         readonly: Bool = false,
         customValidate: ((Any?, inout [String: Any]) -> Void)? = nil,
+        widgets: [String: JSONSchemaFormWidget] = [:],
+        templates: JSONSchemaFormTemplates = JSONSchemaFormTemplates(),
         idPrefix: String = "root",
         idSeparator: String = "_",
         controller: JSONSchemaFormController? = nil
@@ -212,6 +222,8 @@ public struct JSONSchemaForm: View {
         self.disabled = disabled
         self.readonly = readonly
         self.customValidate = customValidate
+        self.widgets = widgets
+        self.templates = templates
         self.idPrefix = idPrefix
         self.idSeparator = idSeparator
         self.externalController = controller
@@ -231,7 +243,8 @@ public struct JSONSchemaForm: View {
                 id: idPrefix,
                 formData: formData,
                 required: false,
-                conditionalSchemas: conditionalSchemas
+                conditionalSchemas: conditionalSchemas,
+                widgets: widgets
             )
 
             if showSubmitButton {
@@ -239,6 +252,7 @@ public struct JSONSchemaForm: View {
             }
         }
         .environment(\.formController, controller)
+        .environment(\.formTemplates, templates)
         .onAppear {
             configureControllerIfNeeded()
         }
@@ -663,4 +677,3 @@ public struct JSONSchemaForm: View {
 
     return UIOrderPreviewWrapper()
 }
-
