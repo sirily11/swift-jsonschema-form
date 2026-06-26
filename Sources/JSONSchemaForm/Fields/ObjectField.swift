@@ -10,6 +10,9 @@ struct ObjectField: Field {
     var formData: Binding<FormData>
     var required: Bool
     var propertyName: String?
+    var widgets: [String: JSONSchemaFormWidget] = [:]
+
+    @Environment(\.formTemplates) private var templates
 
     // Extract properties from schema, using ui:order or JSON-defined order when available
     private var properties: OrderedDictionary<String, JSONSchema>? {
@@ -22,9 +25,9 @@ struct ObjectField: Field {
         // Priority: 1. ui:order from uiSchema, 2. JSON-defined order, 3. dictionary iteration order
         let orderedKeys: [String]
         if let uiOrder = uiSchema?["ui:order"] as? [String] {
-            // Use ui:order from uiSchema, filtering to keys present in schema
-            // Also append any keys not in ui:order at the end
-            let orderedFromUi = uiOrder.filter { dict.keys.contains($0) }
+            // Use ui:order from uiSchema. Keys missing from schema can still render
+            // when they declare a custom widget in uiSchema.
+            let orderedFromUi = uiOrder.filter { dict.keys.contains($0) || hasCustomWidget($0) }
             let remainingKeys = dict.keys.filter { !uiOrder.contains($0) }
             orderedKeys = orderedFromUi + remainingKeys
         } else if let orderMap = uiSchema?["__propertyKeyOrder"] as? [String: [String]],
@@ -38,9 +41,22 @@ struct ObjectField: Field {
 
         var orderedProperties = OrderedDictionary<String, JSONSchema>()
         for key in orderedKeys {
-            orderedProperties[key] = dict[key]
+            orderedProperties[key] = dict[key] ?? virtualSchema(for: key)
         }
         return orderedProperties
+    }
+
+    private func hasCustomWidget(_ name: String) -> Bool {
+        guard let propertyUiSchema = uiSchema?[name] as? [String: Any],
+              let widgetName = propertyUiSchema["ui:widget"] as? String else {
+            return false
+        }
+        return widgets[widgetName] != nil
+    }
+
+    private func virtualSchema(for name: String) -> JSONSchema? {
+        guard hasCustomWidget(name) else { return nil }
+        return JSONSchema.string()
     }
 
     // Get required properties from schema
@@ -52,29 +68,56 @@ struct ObjectField: Field {
         return schema.objectSchema?.required
     }
 
+    /// Object template name requested by the schema's uiSchema, if any.
+    private var objectTemplateName: String? {
+        uiSchema?["ui:objectTemplate"] as? String
+    }
+
     var body: some View {
-        if fieldTitle.isEmpty {
+        if let template = templates.object(for: objectTemplateName) {
+            // Custom (rjsf-style) object layout supplied by the consumer.
+            template(
+                JSONSchemaFormObjectTemplateContext(
+                    id: id,
+                    title: fieldTitle,
+                    description: schema.description,
+                    required: required,
+                    uiSchema: uiSchema,
+                    properties: templateProperties()
+                ))
+        } else if fieldTitle.isEmpty {
             Section {
-                // Render properties according to the order
-                if let properties = properties {
-                    ForEach(Array(properties.keys), id: \.self) { propertyName in
-                        if let propertySchema = properties[propertyName] {
-                            propertyView(name: propertyName, schema: propertySchema)
-                        }
-                    }
-                }
+                propertyList
             }
         } else {
             Section(fieldTitle) {
-                // Render properties according to the order
-                if let properties = properties {
-                    ForEach(Array(properties.keys), id: \.self) { propertyName in
-                        if let propertySchema = properties[propertyName] {
-                            propertyView(name: propertyName, schema: propertySchema)
-                        }
-                    }
+                propertyList
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var propertyList: some View {
+        // Render properties according to the order
+        if let properties = properties {
+            ForEach(Array(properties.keys), id: \.self) { propertyName in
+                if let propertySchema = properties[propertyName] {
+                    propertyView(name: propertyName, schema: propertySchema)
                 }
             }
+        }
+    }
+
+    /// Build the ordered list of rendered child properties for a custom template.
+    private func templateProperties() -> [JSONSchemaFormObjectTemplateProperty] {
+        guard let properties = properties else { return [] }
+        return properties.keys.compactMap { name in
+            guard let propertySchema = properties[name] else { return nil }
+            return JSONSchemaFormObjectTemplateProperty(
+                name: name,
+                id: "\(id)_\(name)",
+                content: AnyView(propertyView(name: name, schema: propertySchema))
+            )
         }
     }
 
@@ -126,7 +169,8 @@ struct ObjectField: Field {
                 id: fieldId,
                 formData: schemaBinding(name: name),
                 required: isRequired,
-                propertyName: name
+                propertyName: name,
+                widgets: widgets
             )
         } else {
             InvalidValueType(

@@ -383,4 +383,40 @@ class JSONSchemaFormFieldOrderTests: XCTestCase {
             fieldValues, expectedOrder,
             "ui:order should ignore nonexistent keys. Got: \(fieldValues)")
     }
+
+    @MainActor
+    func testUIOrderRendersNonSchemaKeyWithCustomWidget() async throws {
+        let schemaJSON = """
+            {
+                "type": "object",
+                "properties": {
+                    "topic": { "type": "string" }
+                }
+            }
+            """
+        let formData = FormData.object(properties: [
+            "topic": .string("topic value")
+        ])
+        let schema = try JSONSchema(jsonString: schemaJSON)
+        let uiSchema: [String: Any] = [
+            "ui:order": ["topic", "attachments"],
+            "attachments": ["ui:widget": "attachments"]
+        ]
+
+        let data = Binding(wrappedValue: formData)
+        let form = JSONSchemaForm(
+            schema: schema,
+            uiSchema: uiSchema,
+            formData: data,
+            schemaJSON: schemaJSON,
+            widgets: [
+                "attachments": { _ in
+                    AnyView(Text("Attachments Row").id("attachments_widget"))
+                }
+            ]
+        )
+
+        XCTAssertNoThrow(try form.inspect().find(viewWithId: "root_topic"))
+        XCTAssertNoThrow(try form.inspect().find(viewWithId: "attachments_widget"))
+    }
 }

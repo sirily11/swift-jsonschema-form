@@ -1,0 +1,4 @@
+module JSONSchemaValidator {
+header "JSONSchemaValidator-Swift.h"
+export *
+}

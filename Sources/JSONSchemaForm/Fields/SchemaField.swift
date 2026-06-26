@@ -14,6 +14,9 @@ struct SchemaField: Field {
     /// Conditional schemas for if/then/else support (passed to AllOfField)
     var conditionalSchemas: [ConditionalSchema]?
 
+    /// Custom widgets keyed by `ui:widget`.
+    var widgets: [String: JSONSchemaFormWidget]
+
     /// Access to the form controller for field-level error display
     @Environment(\.formController) private var formController
 
@@ -30,9 +33,14 @@ struct SchemaField: Field {
         return uiSchema?["ui:field"] as? String
     }
 
+    private var uiWidget: String? {
+        return uiSchema?["ui:widget"] as? String
+    }
+
     init(
         schema: JSONSchema, uiSchema: [String: Any]?, id: String, formData: Binding<FormData>,
-        required: Bool, propertyName: String? = nil, conditionalSchemas: [ConditionalSchema]? = nil
+        required: Bool, propertyName: String? = nil, conditionalSchemas: [ConditionalSchema]? = nil,
+        widgets: [String: JSONSchemaFormWidget] = [:]
     ) {
         self.schema = schema
         self.uiSchema = uiSchema
@@ -41,6 +49,7 @@ struct SchemaField: Field {
         self.required = required
         self.propertyName = propertyName
         self.conditionalSchemas = conditionalSchemas
+        self.widgets = widgets
     }
 
     /// Returns a binding for schema data that correctly updates the parent form data
@@ -69,8 +78,17 @@ struct SchemaField: Field {
 
     var body: some View {
         Group {
-            // If a custom field is specified in uiSchema, use it
-            if let customField = uiField {
+            if let uiWidget, let widget = widgets[uiWidget] {
+                widget(JSONSchemaFormWidgetContext(
+                    id: id,
+                    propertyName: propertyName,
+                    schema: schema,
+                    uiSchema: uiSchema,
+                    formData: schemaDataBinding(schemaType: schema.type),
+                    required: required
+                ))
+            } else if let customField = uiField {
+                // If a custom field is specified in uiSchema, use it
                 // In a complete implementation, this would look up the custom field
                 // from a registry and render it
                 Text("Custom field: \(customField)")
@@ -86,12 +104,13 @@ struct SchemaField: Field {
     private func renderFieldBasedOnSchemaType() -> some View {
         switch schema.type {
         case .string:
-            FieldTemplate(
+            TemplatedField(
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
                 errors: currentFieldErrors,
-                required: required
+                required: required,
+                uiSchema: uiSchema
             ) {
                 StringField(
                     schema: schema,
@@ -104,12 +123,13 @@ struct SchemaField: Field {
             }
 
         case .number:
-            FieldTemplate(
+            TemplatedField(
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
                 errors: currentFieldErrors,
-                required: required
+                required: required,
+                uiSchema: uiSchema
             ) {
                 NumberField(
                     schema: schema,
@@ -122,12 +142,13 @@ struct SchemaField: Field {
             }
 
         case .integer:
-            FieldTemplate(
+            TemplatedField(
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
                 errors: currentFieldErrors,
-                required: required
+                required: required,
+                uiSchema: uiSchema
             ) {
                 NumberField(
                     schema: schema,
@@ -140,12 +161,13 @@ struct SchemaField: Field {
             }
 
         case .boolean:
-            FieldTemplate(
+            TemplatedField(
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
                 errors: currentFieldErrors,
-                required: required
+                required: required,
+                uiSchema: uiSchema
             ) {
                 BooleanField(
                     schema: schema,
@@ -176,7 +198,8 @@ struct SchemaField: Field {
                     id: id,
                     formData: schemaDataBinding(schemaType: schema.type),
                     required: required,
-                    propertyName: propertyName
+                    propertyName: propertyName,
+                    widgets: widgets
                 )
             }
 
@@ -192,12 +215,13 @@ struct SchemaField: Field {
             )
 
         case .null:
-            FieldTemplate(
+            TemplatedField(
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
                 errors: currentFieldErrors,
-                required: required
+                required: required,
+                uiSchema: uiSchema
             ) {
                 Text("null")
                     .foregroundColor(.gray)
@@ -205,12 +229,13 @@ struct SchemaField: Field {
             }
 
         case .enum:
-            FieldTemplate(
+            TemplatedField(
                 id: id,
                 label: fieldTitle,
                 description: schema.description,
                 errors: currentFieldErrors,
-                required: required
+                required: required,
+                uiSchema: uiSchema
             ) {
                 EnumField(
                     schema: schema,
